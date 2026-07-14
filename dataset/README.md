@@ -82,7 +82,3 @@ dataset/
 | v1.0 | 20.000 amostras, perfil VISUAL, 4 classes |
 | v1.1 (futuro) | perfis AUDITIVO/MOTOR/COGNITIVO |
 | v2.0 (futuro) | HTML real do Moodle anotado por especialistas |
-
-## Citação
-
-Consulte [`docs/referencias.bib`](../docs/referencias.bib) para fontes sobre acessibilidade web e OAs.

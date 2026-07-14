@@ -107,9 +107,6 @@ accessibility-dl-moodle/
 ├── Makefile
 │
 ├── docs/                      ← Documentação científica
-│   ├── proposta.pdf
-│   ├── artigo.pdf
-│   ├── referencias.bib
 │   ├── arquitetura.md
 │   ├── metodologia.md
 │   ├── reproduzibilidade.md
