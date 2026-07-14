@@ -17,7 +17,7 @@
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
 | `id` | int | Identificador único (1..20000) |
-| `profile` | str | Perfil do usuário (atualmente só `VISUAL`) |
+| `profile` | str | Perfil do usuário. atualmente só `VISUAL`, porém o código permite adicionar outros. |
 | `html` | str | Trecho HTML do componente |
 | `has_img` | int (0/1) | Contém tag `<img>` |
 | `has_alt` | int (0/1) | Contém atributo `alt` |

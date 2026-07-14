@@ -42,7 +42,6 @@ class LogisticAccessibilityModel:
             max_iter=max_iter,
             C=C,
             solver=solver,
-            multi_class="multinomial",
             random_state=random_state,
             n_jobs=-1,
         )
@@ -95,7 +94,6 @@ def build_logistic_model(
         max_iter=max_iter,
         C=C,
         solver=LOGISTIC_SOLVER,
-        multi_class="multinomial",
         random_state=random_state,
         n_jobs=-1,
     )

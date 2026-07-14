@@ -8,7 +8,7 @@
 * **Tamanho:** 20.000 registros
 * **Distribuição:** perfeitamente balanceada (5.000 por classe)
 * **Classes:** `ADD_ALT`, `ADD_ARIA`, `FIX_HEADING`, `NO_ACTION`
-* **Perfil:** `VISUAL` (extensível)
+* **Perfil:** `VISUAL` (extensível) - Para efeito de validaçao iniciei com apenas este perfil, porém o código permite adicionar outros. Veja a explicação em `docs/dataset.md`
 * **Schema:** 14 colunas (id + profile + html + 11 features + action)
 
 ## Como gerar
