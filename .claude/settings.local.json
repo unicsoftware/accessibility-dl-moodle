@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m pip install beautifulsoup4 lxml)",
+      "Bash(python3 dataset/synthetic/dataset_generator.py --output /tmp/test_dataset.csv --samples 400 --seed 42)",
+      "Bash(python3 -m pip install pandas numpy scikit-learn matplotlib seaborn joblib tqdm loguru)"
+    ]
+  }
+}
