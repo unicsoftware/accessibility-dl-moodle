@@ -199,7 +199,7 @@ flowchart TB
 
 ```bash
 # Clonar o repositório
-git clone https://github.com/elpidiojunior/accessibility-dl-moodle.git
+git clone https://github.com/unicsoftware/accessibility-dl-moodle.git
 cd accessibility-dl-moodle
 
 # Criar ambiente virtual
@@ -247,6 +247,8 @@ O gerador produz **20.000 registros balanceados** (5.000 por classe) com variaç
 # Iniciar servidor Jupyter
 jupyter notebook
 ```
+
+![Interface Jupyter Notebook](docs/images/jupyter_notebook_interface.png)
 
 Em seguida navegue até `notebooks/` e execute na ordem:
 
@@ -399,7 +401,7 @@ Os modelos implementados servem como **baseline experimental**. Resultados quant
   author = {Junior, Elpidio},
   title  = {Detecção Automática de Barreiras de Acessibilidade em Objetos de Aprendizagem Utilizando Deep Learning},
   year   = {2026},
-  url    = {https://github.com/elpidiojunior/accessibility-dl-moodle}
+  url    = {https://github.com/unicsoftware/accessibility-dl-moodle}
 }
 ```
 
