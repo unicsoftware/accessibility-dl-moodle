@@ -39,7 +39,9 @@ def plot_confusion_matrix(
     cm = confusion_matrix(y_true, y_pred, labels=range(len(class_names)))
 
     if normalize:
-        cm = cm.astype("float") / cm.sum(axis=1, keepdims=True)
+        row_sums = cm.sum(axis=1, keepdims=True)
+        row_sums[row_sums == 0] = 1.0
+        cm = cm.astype("float") / row_sums
         cm = np.nan_to_num(cm)
 
     fig, ax = plt.subplots(figsize=(8, 6))

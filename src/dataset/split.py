@@ -55,20 +55,27 @@ def split_dataset(
     if abs(total - 1.0) > 1e-6:
         raise ValueError(f"Soma das proporções deve ser 1.0 (recebido: {total}).")
 
+    # Verifica se estratificação é possível (todas as classes com pelo menos 2 elementos)
+    class_counts = df["action"].value_counts()
+    use_stratify = (class_counts.min() >= 2) if len(class_counts) > 0 else False
+
     # 1ª divisão: treino vs. (validação+teste)
     train_df, temp_df = train_test_split(
         df,
         test_size=(1.0 - train_size),
-        stratify=df["action"],
+        stratify=df["action"] if use_stratify else None,
         random_state=seed,
     )
 
     # 2ª divisão: validação vs. teste
+    temp_class_counts = temp_df["action"].value_counts()
+    use_stratify_temp = use_stratify and (temp_class_counts.min() >= 2)
+
     relative_test = test_size / (val_size + test_size)
     val_df, test_df = train_test_split(
         temp_df,
         test_size=relative_test,
-        stratify=temp_df["action"],
+        stratify=temp_df["action"] if use_stratify_temp else None,
         random_state=seed,
     )
 

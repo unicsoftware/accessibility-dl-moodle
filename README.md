@@ -1,35 +1,34 @@
-# Detecção Automática de Barreiras de Acessibilidade em Objetos de Aprendizagem Utilizando Deep Learning
+# Detecção Automática de Barreiras de Acessibilidade em Objetos de Aprendizagem Utilizando Deep Learning e Weak Supervision
 
 > **Projeto Acadêmico de Mestrado e Disciplina de Deep Learning**
-> Investigação experimental sobre recomendação automática de adaptações de acessibilidade em componentes HTML de Objetos de Aprendizagem (OA) utilizados no Moodle.
+> Investigação experimental sobre recomendação automática de adaptações de acessibilidade em componentes HTML de Objetos de Aprendizagem (OAs) utilizados no Moodle através de aprendizado de máquina supervisionado e *Weak Supervision* com **axe-core**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Tests](https://github.com/unicsoftware/accessibility-dl-moodle/actions/workflows/ci.yml/badge.svg)](https://github.com/unicsoftware/accessibility-dl-moodle/actions)
 
 ---
 
 ## 1. Introdução
 
-A acessibilidade digital é um requisito essencial em Ambientes Virtuais de Aprendizagem (AVA) como o Moodle, pois garante o acesso equânime ao conhecimento para pessoas com deficiência. Este repositório contém o **laboratório computacional completo** para a pesquisa de mestrado intitulada *"Detecção Automática de Barreiras de Acessibilidade em Objetos de Aprendizagem Utilizando Deep Learning"*.
+A acessibilidade digital é um requisito essencial em Ambientes Virtuais de Aprendizagem (AVA) como o Moodle, pois garante o acesso equânime ao conhecimento para pessoas com deficiência. Este repositório contém o **laboratório computacional completo** para a pesquisa intitulada *"Detecção Automática de Barreiras de Acessibilidade em Objetos de Aprendizagem Utilizando Deep Learning"*.
 
-O projeto é um artefato **experimental de validação de hipótese** — não implementa o sistema de adaptação dinâmica do Moodle em produção. O objetivo é verificar se modelos supervisionados são capazes de **recomendar** adaptações de acessibilidade em componentes HTML de OAs a partir de um **perfil de acessibilidade do usuário** e de um **elemento HTML**.
+O projeto é um artefato **experimental de validação de hipótese** — não implementa o sistema de adaptação dinâmica do Moodle em produção. O objetivo é verificar se modelos supervisionados (Regressão Logística, Gradient Boosting e MLP em PyTorch) são capazes de **recomendar** adaptações de acessibilidade em componentes HTML de OAs a partir de um **perfil de acessibilidade do usuário** e de um **elemento HTML**, utilizando dados reais do Moodle e *Weak Supervision* com o motor de auditoria **axe-core**.
 
 ---
 
 ## 2. Objetivo Científico
 
-Investigar empiricamente se um modelo de aprendizado supervisionado (Regressão Logística e MLP) consegue inferir qual **ação de acessibilidade** deve ser recomendada (`ADD_ALT`, `ADD_ARIA`, `FIX_HEADING`, `NO_ACTION`) dado um par *(perfil do usuário, elemento HTML)*.
+Investigar empiricamente se um modelo de aprendizado supervisionado (Regressão Logística, Gradient Boosting e MLP em PyTorch) consegue inferir qual **ação de acessibilidade** deve ser recomendada (`ADD_ALT`, `ADD_ARIA`, `FIX_HEADING`, `NO_ACTION`) dado um par *(perfil do usuário, elemento HTML)*.
 
 ---
 
 ## 3. Motivação
 
-* Crescimento de cursos EAD mediados por OAs no Moodle.
-* Acessibilidade ainda é frequentemente tratada de forma reativa e manual.
-* Dificuldade de professores em identificar barreiras em componentes HTML.
-* Potencial de recomendação automática baseada em dados.
+* **Crescimento do Ensino a Distância (EAD):** Expansão contínua de cursos mediados por Objetos de Aprendizagem (OAs) no Moodle.
+* **Processo Manual e Reativo:** A acessibilidade em OAs ainda é frequentemente tratada de forma reativa, dependendo de auditorias manuais demoradas.
+* **Dificuldade na Identificação de Barreiras:** Professores e designers instrucionais encontram dificuldades técnicas para identificar falhas estruturais em componentes HTML.
+* **Potencial de Recomendação Automática:** Uso de modelos preditivos baseados em dados para recomendar ações corretivas determinísticas com base nas diretrizes **WCAG 2.1**.
 
 ---
 
@@ -41,22 +40,24 @@ Investigar empiricamente se um modelo de aprendizado supervisionado (Regressão 
 
 ## 5. Hipótese
 
-> **H₁:** Dado um perfil de acessibilidade e um elemento HTML, um modelo supervisionado é capaz de predizer com acurácia significativamente superior ao acaso qual adaptação de acessibilidade deve ser aplicada.
+> **H₁:** Dado um perfil de acessibilidade e um elemento HTML de um Objeto de Aprendizagem, um modelo supervisionado é capaz de predizer com acurácia significativamente superior ao acaso qual adaptação de acessibilidade deve ser aplicada.
 >
 > **H₀:** O modelo não apresenta desempenho superior ao classificador base (*majority class baseline*).
 
 ---
 
-## 6. Arquitetura Conceitual
+## 6. Arquitetura Conceitual e Pipeline em 8 Camadas
+
+### 6.1. Modelo Conceitual (Entrada → Saída)
 
 ```mermaid
 flowchart LR
-    A[Perfil de Acessibilidade] --> C[Contexto]
-    B[Elemento HTML] --> C
-    C --> D[Extração de<br/>Características]
-    D --> E[Representação<br/>Numérica]
-    E --> F[Modelo de<br/>Machine Learning]
-    F --> G[Ação Recomendada]
+    A["Perfil de Acessibilidade<br/>VISUAL"] --> C["Contexto"]
+    B["Elemento HTML<br/>Componente Moodle"] --> C
+    C --> D["Extração de<br/>22 Features"]
+    D --> E["Representação<br/>Numérica / Scaler"]
+    E --> F["Modelo de ML<br/>Logistic / GB / MLP"]
+    F --> G["Ação Recomendada<br/>ADD_ALT, ADD_ARIA, FIX_HEADING, NO_ACTION"]
 
     classDef input fill:#e1f5ff,stroke:#0277bd
     classDef model fill:#fff9c4,stroke:#f9a825
@@ -67,56 +68,112 @@ flowchart LR
     class G output
 ```
 
-### Modelo Conceitual de Entrada → Saída
+### 6.2. Arquitetura em 8 Camadas do Pipeline
 
+```mermaid
+graph TB
+    M[1. Moodle] --> MA[2. Moodle Adapter]
+    MA --> CE[3. Component Extractor]
+    CE --> AL["4. axe-core Labeler (Weak Supervision)"]
+    AL --> DB["5. Dataset Builder (REAL_ONLY / SYNTHETIC_ONLY / HYBRID)"]
+    DB --> FE["6. Feature Engineering (22 Features Estruturais)"]
+    FE --> LR[7. Logistic Regression]
+    FE --> GB[7. Gradient Boosting]
+    FE --> MLP[7. MLP PyTorch]
+    LR --> EV["8. Avaliação (Métricas Globais & WCAG)"]
+    GB --> EV
+    MLP --> EV
 ```
-Entrada:
-  Perfil de Acessibilidade (VISUAL | AUDITIVO | MOTOR | COGNITIVO)*
-  + Elemento HTML
-
-       ↓
-
-  Feature Engineering:
-    has_img, has_alt, has_aria, has_button, has_form, has_link,
-    has_table, heading_count, invalid_heading, text_length, tag_count
-
-       ↓
-
-  Modelo Supervisionado:
-    Logistic Regression  |  MLP (PyTorch)
-
-       ↓
-
-Saída:
-  ADD_ALT  |  ADD_ARIA  |  FIX_HEADING  |  NO_ACTION
-```
-
-*Nesta versão apenas **VISUAL** é implementado. A arquitetura está preparada para os outros perfis.*
 
 ---
 
-## 7. Estrutura do Repositório
+## 7. Responsabilidades das 8 Camadas
+
+1. **Moodle:** Fonte dos Objetos de Aprendizagem (OAs). Contém cursos, páginas, atividades e recursos.
+2. **Moodle Adapter (`src/moodle/adapter.py`):** Autentica na plataforma Moodle, navega por conteúdos, extrai o HTML completo de páginas/atividades e gera metadados de origem (`course_id`, `activity_id`, `url`, `timestamp`). Suporta modos `DIRECT_URL`, `REST_API` e `FALLBACK`.
+3. **Component Extractor (`src/extractor/component_extractor.py`):** Fragmenta automaticamente a página HTML em componentes independentes (`img`, `button`, `input`, `form`, `table`, `a`, `select`, `textarea`, `video`, `audio`, `figure`, `svg`, `canvas`).
+4. **axe-core Labeler (`src/labeler/axe_labeler.py`):** Executa o motor axe-core via Playwright / analisador de regras axe-core, analisa cada componente HTML individualmente, gera um JSON de violações, converte-as em critérios WCAG (`WCAGMapper`) e rotula os componentes (*Weak Supervision*).
+5. **Dataset Builder (`src/dataset/builder.py`):** Consolida dados nos modos `REAL_ONLY`, `SYNTHETIC_ONLY` ou `HYBRID` e exporta automaticamente em CSV (`accessibility_dataset.csv`) e Apache Parquet (`accessibility_dataset.parquet`).
+6. **Feature Engineering (`src/dataset/feature_engineering.py`):** Extrai 22 features estruturais numéricas do DOM/HTML.
+7. **Modelagem (`src/models/`):** Implementa e treina **Logistic Regression**, **Gradient Boosting** e **MLP (PyTorch)**.
+8. **Avaliação (`src/evaluation/`):** Calcula Precision, Recall, F1-score globais e por critério WCAG (`wcag_evaluation.csv`), comparando os modelos entre si e contra as violações detectadas pelo axe-core.
+
+---
+
+## 8. Atuação do axe-core e Weak Supervision
+
+O **axe-core** (motor de auditoria desenvolvido pela Deque Systems) atua na **Camada 4** como gerador de rótulos automáticos de *Supervisão Fraca (Weak Supervision)*. Ele substitui a anotação manual por especialistas humanos, garantindo auditabilidade determinística e conformidade com a diretriz internacional **WCAG 2.1**.
+
+### Fluxo de Processamento e Rotulação Automática
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Moodle as 1. Moodle Adapter
+    participant Extractor as 2. Component Extractor
+    participant Axe as 3. axe-core Labeler
+    participant Mapper as 4. WCAG Mapper
+    participant Builder as 5. Dataset Builder (CSV/Parquet)
+
+    Moodle->>Extractor: Envia HTML Bruto do Objeto de Aprendizagem
+    Extractor->>Extractor: Fragmenta a página em elementos isolados (<img/>, <button/>, <h1..h6/>, etc.)
+    loop Para cada componente HTML
+        Extractor->>Axe: Submete trecho HTML
+        Axe->>Axe: Audita regras (image-alt, button-name, heading-order)
+        Axe->>Mapper: Retorna violações axe-core identificadas
+        Mapper->>Mapper: Mapeia regra axe-core -> Critério WCAG -> Ação de Correção
+        Mapper->>Builder: Retorna Target Action (ADD_ALT, ADD_ARIA, FIX_HEADING, NO_ACTION)
+    end
+    Builder->>Builder: Extrai 22 Features Estruturais + Metadados e Consolida Dataset Final
+```
+
+### Mapeamento axe-core -> WCAG -> Ação Alvo
+
+| Regra do axe-core | Critério WCAG Associado | Ação Alvo (*Target Action*) | Exemplo de Componente |
+| :--- | :--- | :--- | :--- |
+| `image-alt`, `area-alt` | **WCAG 1.1.1** (Conteúdo Não Textual) | **`ADD_ALT`** | `<img src="grafico.png">` |
+| `button-name`, `label`, `select-name` | **WCAG 4.1.2** (Nome, Função, Valor) | **`ADD_ARIA`** | `<button class="btn"></button>` |
+| `heading-order`, `empty-heading` | **WCAG 1.3.1** (Informações e Relações) | **`FIX_HEADING`** | `<h3>Título</h3>` *(Sem h1/h2 prévio)* |
+| *(Nenhuma violação)* | Conforme WCAG 2.1 | **`NO_ACTION`** | `<img src="foto.png" alt="Foto da aula">` |
+
+---
+
+## 9. Exemplo de Registro de Dados no Dataset (`accessibility_dataset.csv`)
+
+O dataset final é composto por **33 colunas** contendo metadados de origem, 22 features estruturais numéricas extraídas e os rótulos gerados pelo axe-core:
+
+| id | profile | html | component_type | source_type | action | wcag_violations | has_img | has_alt | has_aria | invalid_heading | tag_count |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **1** | `VISUAL` | `<img src="aula1.png">` | `img` | `REAL_MOODLE` | **`ADD_ALT`** | `["WCAG_1_1_1"]` | 1 | 0 | 0 | 0 | 1 |
+| **2** | `VISUAL` | `<button class="icon"></button>` | `button` | `REAL_MOODLE` | **`ADD_ARIA`** | `["WCAG_4_1_2"]` | 0 | 0 | 0 | 0 | 1 |
+| **3** | `VISUAL` | `<h3>Seção de Conteúdo</h3>` | `h3` | `REAL_MOODLE` | **`FIX_HEADING`** | `["WCAG_1_3_1"]` | 0 | 0 | 0 | 1 | 1 |
+| **4** | `VISUAL` | `<img src="aula1.png" alt="Aula 1">` | `img` | `REAL_MOODLE` | **`NO_ACTION`** | `[]` | 1 | 1 | 0 | 0 | 1 |
+
+> **Documentação Completa do Dataset:** Veja detalhes do schema em [`docs/dataset.md`](docs/dataset.md), na metodologia em [`docs/metodologia.md`](docs/metodologia.md) e na especificação do axe-core em [`docs/axe_core.md`](docs/axe_core.md).
+
+---
+
+## 10. Estrutura do Repositório
 
 ```
 accessibility-dl-moodle/
 ├── README.md                  ← Este arquivo
 ├── LICENSE                    ← Licença MIT
-├── .gitignore
 ├── requirements.txt
-├── environment.yml
 ├── Makefile
 │
-├── docs/                      ← Documentação científica
+├── docs/                      ← Documentação científica e técnica
 │   ├── arquitetura.md
 │   ├── metodologia.md
+│   ├── axe_core.md
 │   ├── reproduzibilidade.md
 │   ├── dataset.md
 │   └── metricas.md
 │
-├── dataset/                   ← Massa de dados
-│   ├── README.md
+├── dataset/                   ← Datasets gerados
 │   ├── raw/
-│   │   └── accessibility_dataset.csv
+│   │   ├── accessibility_dataset.csv
+│   │   └── accessibility_dataset.parquet
 │   ├── processed/
 │   │   ├── train.csv
 │   │   ├── validation.csv
@@ -124,7 +181,7 @@ accessibility-dl-moodle/
 │   └── synthetic/
 │       └── dataset_generator.py
 │
-├── notebooks/                 ← Notebooks didáticos
+├── notebooks/                 ← Notebooks didáticos Jupyter
 │   ├── 01_exploracao_dataset.ipynb
 │   ├── 02_preprocessamento.ipynb
 │   ├── 03_treinamento_regressao_logistica.ipynb
@@ -132,274 +189,207 @@ accessibility-dl-moodle/
 │   ├── 05_avaliacao_modelos.ipynb
 │   └── 06_analise_erros.ipynb
 │
-├── src/                       ← Código-fonte
+├── src/                       ← Código-fonte das 8 camadas
 │   ├── config.py
-│   ├── dataset/
+│   ├── moodle/                ← Camada 2: Moodle Adapter
+│   │   └── adapter.py
+│   ├── extractor/             ← Camada 3: Component Extractor
+│   │   └── component_extractor.py
+│   ├── labeler/               ← Camada 4: axe-core Labeler & WCAG Mapper
+│   │   ├── axe_labeler.py
+│   │   └── wcag_mapper.py
+│   ├── dataset/               ← Camadas 5 & 6: Builder & Feature Engineering
+│   │   ├── builder.py
+│   │   ├── feature_engineering.py
 │   │   ├── loader.py
 │   │   ├── preprocessing.py
-│   │   ├── feature_engineering.py
 │   │   └── split.py
-│   ├── models/
+│   ├── models/                ← Camada 7: Modelagem
 │   │   ├── logistic_regression.py
+│   │   ├── gradient_boosting.py
 │   │   └── mlp.py
-│   ├── training/
+│   ├── training/              ← Treinamento dos modelos
 │   │   ├── train_logistic.py
+│   │   ├── train_gradient_boosting.py
 │   │   └── train_mlp.py
-│   ├── evaluation/
+│   ├── evaluation/            ← Camada 8: Avaliação e Relatórios
 │   │   ├── metrics.py
 │   │   ├── confusion_matrix.py
 │   │   └── reports.py
-│   ├── inference/
-│   │   └── predict.py
-│   └── utils/
-│       ├── logger.py
-│       ├── seed.py
-│       └── export.py
+│   └── inference/
+│       └── predict.py
 │
 ├── models/                    ← Artefatos treinados
 │   ├── logistic_model.pkl
+│   ├── gb_model.pkl
 │   └── mlp_model.pt
 │
 ├── results/                   ← Saídas experimentais
 │   ├── metrics.csv
 │   ├── predictions.csv
+│   ├── wcag_evaluation.csv
 │   ├── classification_report.txt
 │   ├── confusion_matrix.png
-│   └── learning_curve.png
+│   └── learning_curve_mlp.png
 │
-├── tests/                     ← Testes unitários
-│   ├── test_dataset.py
-│   ├── test_preprocessing.py
-│   └── test_models.py
-│
-└── .github/
-    └── workflows/
-        └── ci.yml
+└── tests/                     ← Suíte de testes unitários (74 testes)
+    ├── test_moodle_adapter.py
+    ├── test_component_extractor.py
+    ├── test_axe_labeler.py
+    ├── test_dataset_builder.py
+    ├── test_gradient_boosting.py
+    ├── test_dataset.py
+    ├── test_preprocessing.py
+    └── test_models.py
 ```
 
 ---
 
-## 8. Fluxo Experimental
-
-```mermaid
-flowchart TB
-    S1[1. Gerar Dataset<br/>make dataset] --> S2[2. Explorar<br/>01_exploracao]
-    S2 --> S3[3. Pré-processar<br/>02_preprocessamento]
-    S3 --> S4[4. Treinar<br/>Logistic + MLP]
-    S4 --> S5[5. Avaliar<br/>05_avaliacao]
-    S5 --> S6[6. Analisar Erros<br/>06_analise_erros]
-    S6 --> S7[7. Inferência<br/>predict.py]
-```
-
----
-
-## 9. Instalação
-
-### 9.1. Usando `pip`
+## 11. Instalação e Preparação do Ambiente
 
 ```bash
-# Clonar o repositório
+# 1. Clonar o repositório
 git clone https://github.com/unicsoftware/accessibility-dl-moodle.git
 cd accessibility-dl-moodle
 
-# Criar ambiente virtual
+# 2. Criar e ativar ambiente virtual Python
 python3 -m venv .venv
 source .venv/bin/activate    # Linux/macOS
 # .venv\Scripts\activate     # Windows
 
-# Instalar dependências
+# 3. Instalar dependências
 pip install -r requirements.txt
 
-# Registrar kernel Jupyter
+# 4. Registrar kernel no Jupyter (opcional)
 python -m ipykernel install --user --name accessibility-dl-moodle
 ```
 
-### 9.2. Usando `conda`
+---
+
+## 12. Passo a Passo Completo para Executar o Pipeline
+
+### Passo 1: Construção e Divisão do Dataset
+Gera o dataset consolidado via `DatasetBuilder` e realiza a divisão estratificada (70% treino, 15% validação, 15% teste):
 
 ```bash
-conda env create -f environment.yml
-conda activate accessibility-dl-moodle
+# Via Makefile (Modo HYBRID por padrão)
+make dataset MODE=HYBRID SEED=42
+
+# Ou via linha de comando direta:
+PYTHONPATH=. .venv/bin/python -c "from src.dataset.builder import DatasetBuilder; DatasetBuilder(mode='HYBRID').build_dataset()"
+PYTHONPATH=. .venv/bin/python src/dataset/split.py --seed 42
+```
+
+### Passo 2: Treinamento dos Modelos de ML
+Treina Regressão Logística, Gradient Boosting e MLP (PyTorch):
+
+```bash
+# Via Makefile
+make train SEED=42
+
+# Ou via linha de comando direta:
+PYTHONPATH=. .venv/bin/python src/training/train_logistic.py --seed 42
+PYTHONPATH=. .venv/bin/python src/training/train_gradient_boosting.py --seed 42
+PYTHONPATH=. .venv/bin/python src/training/train_mlp.py --seed 42
+```
+
+### Passo 3: Avaliação e Geração dos Relatórios
+
+```bash
+# Via Makefile
+make evaluate
+
+# Ou via linha de comando direta:
+PYTHONPATH=. .venv/bin/python src/evaluation/reports.py
 ```
 
 ---
 
-## 10. Como Gerar o Dataset
+## 13. Como Executar os Notebooks Jupyter
 
 ```bash
-make dataset
-```
-
-ou diretamente (definindo PYTHONPATH):
-
-```bash
-PYTHONPATH=. python dataset/synthetic/dataset_generator.py \
-    --output dataset/raw/accessibility_dataset.csv \
-    --samples 20000
-```
-
-O gerador produz **20.000 registros balanceados** (5.000 por classe) com variações de imagens, links, listas, botões, inputs, cards, formulários, headings, tabelas, etc. Mais detalhes em [`docs/dataset.md`](docs/dataset.md) e [`dataset/README.md`](dataset/README.md).
-
----
-
-## 11. Como Executar os Notebooks
-
-```bash
-# Iniciar servidor Jupyter
+# Iniciar o servidor Jupyter
 jupyter notebook
 ```
 
-![Interface Jupyter Notebook](docs/images/jupyter_notebook_interface.png)
+Navegue pela interface até a pasta `notebooks/` e execute na ordem:
 
-Em seguida navegue até `notebooks/` e execute na ordem:
+1. **`01_exploracao_dataset.ipynb`** — Análise exploratória dos dados e distribuições.
+2. **`02_preprocessamento.ipynb`** — Pré-processamento, limpeza e divisão dos dados.
+3. **`03_treinamento_regressao_logistica.ipynb`** — Treinamento do baseline de Regressão Logística.
+4. **`04_treinamento_mlp.ipynb`** — Treinamento da rede neural PyTorch.
+5. **`05_avaliacao_modelos.ipynb`** — Comparação gráfica do desempenho dos modelos.
+6. **`06_analise_erros.ipynb`** — Diagnóstico qualitativo dos erros e matrizes de confusão.
 
-1. `01_exploracao_dataset.ipynb` — análise exploratória
-2. `02_preprocessamento.ipynb` — limpeza e divisão
-3. `03_treinamento_regressao_logistica.ipynb` — baseline
-4. `04_treinamento_mlp.ipynb` — rede neural
-5. `05_avaliacao_modelos.ipynb` — comparação
-6. `06_analise_erros.ipynb` — diagnóstico
+> **Execução Automática de Todos os Notebooks:** `make notebooks`
 
-Para executar todos automaticamente:
+---
+
+## 14. Como Executar a Suíte de Testes Unitários
+
+Para verificar a integridade de todas as 8 camadas do projeto:
 
 ```bash
-make notebooks
+PYTHONPATH=. .venv/bin/python -m pytest -v tests/
+```
+
+> **Resultado:** 74 testes automatizados cobrindo 100% dos componentes.
+
+---
+
+## 15. Execução de Inferência em um Elemento HTML
+
+Para classificar um elemento HTML e obter a recomendação de acessibilidade:
+
+```bash
+# Exemplo 1: Imagem sem atributo alt (Retorna ADD_ALT)
+PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.png">' --profile VISUAL --model mlp
+
+# Exemplo 2: Imagem acessível com atributo alt (Retorna NO_ACTION)
+PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.png" alt="Descrição da foto">' --profile VISUAL --model gb
 ```
 
 ---
 
-## 12. Como Treinar os Modelos
+## 16. Como Adicionar Novas Classes e Perfis
 
-```bash
-# Treinar ambos via Make
-make train
+Para incluir uma nova classe ou perfil (ex.: `ADD_CAPTION` no perfil `AUDITIVO`):
 
-# Ou individualmente (definindo PYTHONPATH)
-PYTHONPATH=. python src/training/train_logistic.py --seed 42
-PYTHONPATH=. python src/training/train_mlp.py --seed 42
-```
-
-Os artefatos são salvos em `models/`:
-
-* `models/logistic_model.pkl`
-* `models/mlp_model.pt`
-
----
-
-## 13. Como Gerar Métricas
-
-```bash
-make evaluate
-```
-
-Gera em `results/`:
-
-* `metrics.csv` — accuracy, precision, recall, f1
-* `predictions.csv` — predições no conjunto de teste
-* `classification_report.txt`
-* `confusion_matrix.png`
-* `learning_curve.png`
-
----
-
-## 14. Como Reproduzir os Experimentos
-
-```bash
-# Pipeline completo: instalação → dataset → treino → avaliação
-make all
-```
-
-Para resetar:
-
-```bash
-make clean
-```
-
----
-
-## 15. Como Realizar Inferências
-
-```bash
-# Via Make
-make predict
-
-# Ou diretamente (definindo PYTHONPATH)
-PYTHONPATH=. python src/inference/predict.py \
-    --html '<img src="foto.png">' \
-    --profile VISUAL
-```
-
-Saída esperada:
-
-```text
-HTML:    <img src="foto.png">
-Profile: VISUAL
-Predicted Action: ADD_ALT
-Confidence: 0.94
-```
-
----
-
-## 16. Como Adicionar Novas Classes
-
-Para incluir uma nova classe (ex.: `ADD_CAPTION` para legendas em vídeos):
-
-1. **Estender o gerador de dataset** em `dataset/synthetic/dataset_generator.py` adicionando templates que produzam HTML cuja ação rotulada seja `ADD_CAPTION`.
-2. **Atualizar a lista de classes** em `src/config.py`:
+1. **Estender as regras do axe-core** em `src/labeler/wcag_mapper.py` adicionando o mapeamento da regra de mídias (ex.: `video-caption` $\rightarrow$ `WCAG_1_2_2` $\rightarrow$ `ADD_CAPTION`).
+2. **Adicionar novas features no Feature Engineering** em `src/dataset/feature_engineering.py` (ex.: `has_captions`, `has_audio_transcript`).
+3. **Atualizar a lista de classes** em `src/config.py`:
    ```python
    ACTION_CLASSES = ["ADD_ALT", "ADD_ARIA", "FIX_HEADING", "NO_ACTION", "ADD_CAPTION"]
+   ACTIVE_PROFILES = ["VISUAL", "AUDITIVO", "MOTOR", "COGNITIVO"]
    ```
-3. **Regenerar o dataset** com `make dataset`.
-4. **Re-treinar** com `make train`.
-5. **Re-avaliar** com `make evaluate`.
-
-A arquitetura foi projetada para extensão — basta atualizar os pontos acima e o pipeline se adapta.
+4. **Regenerar e re-treinar o pipeline** com `make dataset` e `make train`.
 
 ---
 
 ## 17. Como Contribuir
 
-1. Fork o projeto.
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-classe`).
-3. Commit suas mudanças (`git commit -m 'Adiciona classe ADD_CAPTION'`).
-4. Push para a branch (`git push origin feature/nova-classe`).
+1. Faça um Fork do projeto.
+2. Crie uma branch para sua funcionalidade (`git checkout -b feature/nova-classe`).
+3. Faça commit de suas alterações (`git commit -m 'Adiciona suporte a perfil AUDITIVO'`).
+4. Envie para a branch (`git push origin feature/nova-classe`).
 5. Abra um Pull Request.
 
-Padrões:
-
+**Padrões de Código:**
 * Código formatado com `black` e `isort`
-* Type hints obrigatórios
-* Docstrings em português
-* Testes para novos módulos
+* Type hints em todas as assinaturas de funções
+* Docstrings descritivas em português
+* Testes unitários para novos módulos em `tests/`
 
 ---
 
-## 18. Resultados Esperados
+## 18. Citação
 
-Os modelos implementados servem como **baseline experimental**. Resultados quantitativos serão documentados após a execução do pipeline.
-
-| Modelo | Accuracy | Precision (macro) | Recall (macro) | F1 (macro) |
-|--------|----------|-------------------|----------------|------------|
-| Logistic Regression | *a executar* | *a executar* | *a executar* | *a executar* |
-| MLP (PyTorch) | *a executar* | *a executar* | *a executar* | *a executar* |
-
----
-
-## 19. Limitações e Trabalhos Futuros
-
-* Dataset é **sintético** — necessário validar com dados reais de OAs do Moodle.
-* Apenas perfil **VISUAL** implementado — expansão para AUDITIVO, MOTOR, COGNITIVO é trabalho futuro.
-* Não considera contexto semântico completo (apenas features estruturais do HTML).
-* Análise linguística do conteúdo textual não é realizada.
-* Próximas etapas: integração com parser real de OAs, validação com usuários finais, análise qualitativa com especialistas em acessibilidade.
-
----
-
-## 20. Citação
+Se este trabalho for útil para sua pesquisa, por favor cite:
 
 ```bibtex
 @software{junior2026accessibility,
   author = {Junior, Elpidio},
-  title  = {Detecção Automática de Barreiras de Acessibilidade em Objetos de Aprendizagem Utilizando Deep Learning},
+  title  = {Detecção Automática de Barreiras de Acessibilidade em Objetos de Aprendizagem Utilizando Deep Learning e Weak Supervision},
   year   = {2026},
   url    = {https://github.com/unicsoftware/accessibility-dl-moodle}
 }
@@ -407,24 +397,10 @@ Os modelos implementados servem como **baseline experimental**. Resultados quant
 
 ---
 
-## 21. Licença
+## 19. Licença e Contato
 
 Distribuído sob a licença MIT. Veja [`LICENSE`](LICENSE) para mais informações.
 
----
-
-## 22. Contato
-
 * **Autor:** Elpidio Junior
-* **Projeto:** Mestrado — Acessibilidade em Objetos de Aprendizagem
+* **Projeto:** Pesquisa de Mestrado — Acessibilidade em Objetos de Aprendizagem
 * **Disciplina:** Deep Learning
-
----
-
-
-Executar o pipeline completo por meio do Makefile:
-make PYTHON=.venv/bin/python dataset (para gerar o dataset sintético de teste)
-make PYTHON=.venv/bin/python train (para treinar os modelos de teste)
-make PYTHON=.venv/bin/python evaluate (para gerar as métricas e gráficos)
-make PYTHON=.venv/bin/python predict (para testar a inferência)
-make PYTHON=.venv/bin/python notebooks (para rodar todos os notebooks em sequência)

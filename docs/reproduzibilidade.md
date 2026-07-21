@@ -1,129 +1,161 @@
-# Reprodutibilidade
+# Guia de Reproduzibilidade e Execução do Projeto
 
-## 1. Princípio
+Este documento fornece as instruções passo a passo para qualquer pessoa reproduzir o pipeline experimental, executar a suíte de testes e rodar os notebooks Jupyter de forma determinística e automatizada.
 
-Todo experimento deste repositório deve ser **reproduzível** por terceiros com a mesma configuração de hardware/software. Para isso, adotamos:
+---
 
-* Seeds fixas em todos os geradores aleatórios.
-* Ambientes isolados (`venv` ou `conda`).
-* Pipeline automatizado via `Makefile`.
-* CI/CD em GitHub Actions.
+## 1. Requisitos do Ambiente
 
-## 2. Ambientes Suportados
+- **Python 3.9+**
+- Dependências instaladas conforme `requirements.txt`
+- Ambiente virtual (`.venv`) ativado
 
-### 2.1. Python puro
+---
 
-* Python 3.12 (recomendado)
-* Compatível com Python 3.10+
+## 2. Passo a Passo Completo para Execução do Pipeline
+
+### Passo 1: Instalação e Preparação do Ambiente
 
 ```bash
+# 1. Criar e ativar o ambiente virtual (se ainda não criado)
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate    # No Linux/macOS
+# .venv\Scripts\activate     # No Windows
+
+# 2. Instalar as dependências
 pip install -r requirements.txt
 ```
 
-### 2.2. Conda
+---
+
+### Passo 2: Executar a Suíte de Testes Unitários
+
+Executa todos os 74 testes unitários cobrindo as 8 camadas do pipeline (Moodle Adapter, Component Extractor, axe-core Labeler, Dataset Builder, Feature Engineering, Modelos e Relatórios):
 
 ```bash
-conda env create -f environment.yml
-conda activate accessibility-dl-moodle
+PYTHONPATH=. .venv/bin/python -m pytest -v tests/
 ```
 
-## 3. Pipeline Automatizado
+> **Resultado Esperado:** 74 testes executados e aprovados (100% PASS).
+
+---
+
+### Passo 3: Construção e Consolidação do Dataset
+
+Constrói o dataset no modo desejado (`HYBRID`, `REAL_ONLY` ou `SYNTHETIC_ONLY`) e realiza a divisão estratificada em treino (70%), validação (15%) e teste (15%):
 
 ```bash
-make all      # install + dataset + train + evaluate
+# 1. Gerar dataset consolidado (exemplo modo HYBRID)
+PYTHONPATH=. .venv/bin/python -c "from src.dataset.builder import DatasetBuilder; DatasetBuilder(mode='HYBRID').build_dataset()"
+
+# 2. Realizar a divisão estratificada (train/val/test) com seed determinística
+PYTHONPATH=. .venv/bin/python src/dataset/split.py --seed 42
 ```
 
-Comandos individuais:
+> **Alternativa via Makefile:** `make dataset MODE=HYBRID SEED=42`
+
+---
+
+### Passo 4: Treinamento dos Modelos de Aprendizado de Máquina
+
+Treina os três modelos supervisionados e salva os artefatos treinados na pasta `models/`:
 
 ```bash
-make dataset      # gera 20.000 registros sintéticos
-make notebooks    # executa todos os notebooks
-make train        # treina Logistic + MLP
-make evaluate     # gera métricas e relatórios
-make predict      # exemplo de inferência
-make tests        # roda a suíte de testes
-make clean        # remove artefatos
+# 1. Treinar Regressão Logística
+PYTHONPATH=. .venv/bin/python src/training/train_logistic.py --seed 42
+
+# 2. Treinar Gradient Boosting
+PYTHONPATH=. .venv/bin/python src/training/train_gradient_boosting.py --seed 42
+
+# 3. Treinar MLP (Multi-Layer Perceptron em PyTorch)
+PYTHONPATH=. .venv/bin/python src/training/train_mlp.py --seed 42
 ```
 
-## 4. Seeds e Determinismo
+> **Alternativa via Makefile:** `make train SEED=42`
 
-O módulo `src/utils/seed.py` fixa seeds em:
+---
 
-* Python `random`
-* NumPy
-* PyTorch (CPU e CUDA)
-* CuDNN (modo determinístico)
+### Passo 5: Avaliação e Geração dos Relatórios Comparativos
 
-```python
-from src.utils.seed import set_seed
-set_seed(42)
-```
-
-## 5. Controle de Versão
-
-* **Git** para versionamento de código.
-* **Tags semânticas** (`v0.1.0`, `v0.2.0`, ...) para releases do dataset e modelos.
-* **DVC** (opcional, futuro) para versionar datasets grandes.
-
-## 6. CI/CD
-
-O arquivo `.github/workflows/ci.yml` executa em cada *push* e *pull request*:
-
-1. Setup do ambiente Python.
-2. Instalação de dependências.
-3. Lint (`flake8`, `black --check`).
-4. Testes (`pytest --cov`).
-5. Geração de dataset (amostra reduzida para CI).
-6. Treinamento rápido de smoke test.
-7. Upload de artefatos.
-
-## 7. Hardware de Referência
-
-Os experimentos foram concebidos para execução em:
-
-* **CPU:** qualquer processador x86_64 moderno.
-* **RAM:** mínimo 4 GB.
-* **GPU:** opcional. MLP é leve e roda em CPU em poucos minutos.
-
-## 8. Verificação da Reprodutibilidade
-
-Para validar a reprodutibilidade localmente:
+Gera o relatório consolidado de métricas, comparações entre modelos e avaliação individual por critério WCAG:
 
 ```bash
-# 1. Limpar artefatos
-make clean
-
-# 2. Re-executar pipeline completo
-make all
-
-# 3. Conferir métricas em results/metrics.csv
-cat results/metrics.csv
+PYTHONPATH=. .venv/bin/python src/evaluation/reports.py
 ```
 
-Os valores devem ser idênticos (até precisão de ponto flutuante da CPU) em cada execução.
+> **Artefatos Gerados na pasta `results/`:**
+> - `results/metrics.csv`: Métricas de acurácia, precisão, recall e F1 de todos os modelos.
+> - `results/predictions.csv`: Predições no conjunto de teste.
+> - `results/wcag_evaluation.csv`: Métricas de desempenho por critério WCAG.
+> - `results/classification_report.txt`: Relatório detalhado por classe.
+> - `results/confusion_matrix.png`: Matriz de confusão em imagem PNG.
 
-## 9. Containers (opcional, futuro)
+---
 
-Dockerfile planejado:
+### Passo 6: Testar Inferência em Elemento HTML Isolado
 
-```dockerfile
-FROM python:3.12-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["make", "all"]
+Executa a predição para um elemento HTML específico utilizando o modelo de sua escolha (`mlp`, `gb` ou `logistic`):
+
+```bash
+# Execução direta utilizando .venv no macOS/Linux
+PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.png">' --profile VISUAL --model mlp
+
+# Execução com ambiente virtual ativado (source .venv/bin/activate)
+PYTHONPATH=. python src/inference/predict.py --html '<img src="foto.png" alt="Descrição da foto">' --profile VISUAL --model mlp
 ```
 
-## 10. Proveniência dos Dados
+---
 
-* **Origem:** geração sintética controlada (script `dataset/synthetic/dataset_generator.py`).
-* **Hash do dataset:** gerado automaticamente em cada execução (ver `src/utils/export.py`).
-* **Data de geração:** registrada em `results/metadata.json`.
+## 3. Como Executar os Notebooks Jupyter
 
-## 11. Licença de Dados e Código
+Os notebooks presentes na pasta `notebooks/` servem para explorar dados, visualizar gráficos e analisar os erros dos modelos.
 
-* Código: MIT (ver `LICENSE`).
-* Dados sintéticos: domínio público — podem ser redistribuídos livremente.
+### Passo 1: Registrar o Kernel no Jupyter
+```bash
+.venv/bin/python -m ipykernel install --user --name accessibility-dl-moodle
+```
+
+### Passo 2: Iniciar o Servidor Jupyter
+```bash
+jupyter notebook
+```
+
+### Passo 3: Ordem Recomendada de Execução
+Navegue pela interface do Jupyter até a pasta `notebooks/` e execute os arquivos na seguinte ordem:
+
+1. **`01_exploracao_dataset.ipynb`** — Análise exploratória dos dados e distribuições.
+2. **`02_preprocessamento.ipynb`** — Verificação do pré-processamento e divisão dos dados.
+3. **`03_treinamento_regressao_logistica.ipynb`** — Treinamento interativo e análise do baseline.
+4. **`04_treinamento_mlp.ipynb`** — Treinamento interativo da rede neural PyTorch.
+5. **`05_avaliacao_modelos.ipynb`** — Comparação visual de desempenho entre os modelos.
+6. **`06_analise_erros.ipynb`** — Análise qualitativa e matrizes de erros.
+
+> **Execução Automática de Todos os Notebooks via Makefile:**
+> ```bash
+> make notebooks
+> ```
+
+---
+
+## 4. Comando Único de Reprodução Ponta a Ponta
+
+Para executar todo o ciclo (geração de dados, divisão, treino dos 3 modelos e relatórios finalizados) em um único comando:
+
+```bash
+PYTHONPATH=. .venv/bin/python -c "from src.dataset.builder import DatasetBuilder; DatasetBuilder(mode='HYBRID').build_dataset()" && \
+PYTHONPATH=. .venv/bin/python src/dataset/split.py --seed 42 && \
+PYTHONPATH=. .venv/bin/python src/training/train_logistic.py --seed 42 && \
+PYTHONPATH=. .venv/bin/python src/training/train_gradient_boosting.py --seed 42 && \
+PYTHONPATH=. .venv/bin/python src/training/train_mlp.py --seed 42 && \
+PYTHONPATH=. .venv/bin/python src/evaluation/reports.py
+```
+
+---
+
+## 5. Garantia de Reprodutibilidade e Seeds
+
+O projeto assegura reprodutibilidade fixando a seed determinística (default `42`) em todas as bibliotecas utilizadas:
+- Python (`random`)
+- NumPy (`np.random`)
+- PyTorch (`torch.manual_seed`)
+- Scikit-Learn (`random_state=42`)

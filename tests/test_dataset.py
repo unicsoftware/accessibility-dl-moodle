@@ -122,7 +122,7 @@ class TestExtractFeatures:
         html = '<img src="x.png" alt="X">'
         features = extract_features(html)
         assert set(features.keys()) == set(FEATURE_COLUMNS)
-        assert len(features) == 11
+        assert len(features) == len(FEATURE_COLUMNS)
 
     def test_values_are_ints(self):
         features = extract_features('<img src="x.png">')
@@ -168,14 +168,9 @@ class TestSyntheticDataset:
         assert sample_df.shape[0] == 400
 
     def test_columns(self, sample_df):
-        expected_cols = {
-            "id", "profile", "html",
-            "has_img", "has_alt", "has_aria",
-            "has_button", "has_form", "has_link", "has_table",
-            "heading_count", "invalid_heading",
-            "text_length", "tag_count", "action",
-        }
-        assert set(sample_df.columns) == expected_cols
+        from src.config import DATASET_COLUMNS
+
+        assert set(sample_df.columns) == set(DATASET_COLUMNS)
 
     def test_balanced(self, sample_df):
         counts = sample_df["action"].value_counts()

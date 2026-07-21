@@ -6,12 +6,14 @@
 """
 Módulo de inferência.
 
-Permite classificar um par (HTML, perfil) usando o modelo treinado.
+Permite classificar um par (HTML, perfil) usando os modelos treinados
+(Logistic Regression, Gradient Boosting ou MLP).
 
 Uso:
     python src/inference/predict.py \\
         --html '<img src="foto.png">' \\
-        --profile VISUAL
+        --profile VISUAL \\
+        --model mlp
 """
 
 from __future__ import annotations
@@ -23,18 +25,22 @@ from typing import Optional
 
 import joblib
 import numpy as np
+import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from src.config import (  # noqa: E402
-    ACTIVE_PROFILES,
     ACTION_CLASSES,
+    ACTIVE_PROFILES,
+    GB_MODEL_FILE,
     LOGISTIC_MODEL_FILE,
     MLP_MODEL_FILE,
+    FEATURE_COLUMNS,
     NUM_FEATURES,
 )
 from src.dataset.feature_engineering import extract_features  # noqa: E402
+from src.models.gradient_boosting import GradientBoostingAccessibilityModel  # noqa: E402
 from src.models.logistic_regression import LogisticAccessibilityModel  # noqa: E402
 from src.models.mlp import MLPAccessibilityModel  # noqa: E402
 
@@ -47,8 +53,7 @@ _label_encoder: Optional[object] = None
 def _load_artifacts():
     """Carrega scaler e label encoder.
 
-    Para o projeto, reutilizamos o pipeline de preprocessamento.
-    Em produção, esses artefatos deveriam ser serializados separadamente.
+    Reutiliza o pipeline de pré-processamento.
     """
     global _scaler, _label_encoder
     if _scaler is None or _label_encoder is None:
@@ -70,8 +75,8 @@ def predict_action(
 
     Args:
         html: trecho HTML.
-        profile: perfil do usuário (sempre VISUAL nesta versão).
-        model_type: 'mlp' ou 'logistic'.
+        profile: perfil do usuário (VISUAL nesta versão).
+        model_type: 'mlp', 'logistic' ou 'gb'.
 
     Returns:
         Dicionário com classe predita e confiança.
@@ -82,36 +87,38 @@ def predict_action(
             f"Perfis disponíveis: {ACTIVE_PROFILES}"
         )
 
-    # Extrai e normaliza
+    # Extrai features e normaliza utilizando o schema completo
     features = extract_features(html)
     scaler, le = _load_artifacts()
 
-    feature_order = [
-        "has_img", "has_alt", "has_aria", "has_button", "has_form",
-        "has_link", "has_table", "heading_count", "invalid_heading",
-        "text_length", "tag_count",
-    ]
-    x = np.array([[features[c] for c in feature_order]], dtype=float)
-    x_scaled = scaler.transform(x)
+    # Cria DataFrame com nomes de colunas correspondentes para evitar warnings
+    x_df = pd.DataFrame([[features[c] for c in FEATURE_COLUMNS]], columns=FEATURE_COLUMNS)
+    x_scaled = scaler.transform(x_df)
 
-    # Carrega modelo
-    if model_type == "mlp":
+    # Carrega modelo selecionado
+    model_key = model_type.lower()
+    if model_key in ["mlp"]:
         model = MLPAccessibilityModel.load(MLP_MODEL_FILE)
         proba = model.predict_proba(x_scaled)[0]
-        pred_idx = int(np.argmax(proba))
-    elif model_type == "logistic":
+    elif model_key in ["logistic", "logistic_regression"]:
         model = LogisticAccessibilityModel.load(LOGISTIC_MODEL_FILE)
         proba = model.predict_proba(x_scaled)[0]
-        pred_idx = int(np.argmax(proba))
+    elif model_key in ["gb", "gradient_boosting"]:
+        model = GradientBoostingAccessibilityModel.load(GB_MODEL_FILE)
+        proba = model.predict_proba(x_scaled)[0]
     else:
-        raise ValueError(f"model_type deve ser 'mlp' ou 'logistic' (recebido: {model_type})")
+        raise ValueError(
+            f"model_type inválido '{model_type}'. Escolha 'mlp', 'logistic' ou 'gb'."
+        )
 
+    pred_idx = int(np.argmax(proba))
     pred_class = le.inverse_transform([pred_idx])[0]
     confidence = float(proba[pred_idx])
 
     return {
         "html": html,
         "profile": profile,
+        "model_used": model_type,
         "predicted_action": pred_class,
         "confidence": confidence,
         "probabilities": {
@@ -140,8 +147,8 @@ def parse_args() -> argparse.Namespace:
         "--model",
         type=str,
         default="mlp",
-        choices=["mlp", "logistic"],
-        help="Modelo a ser utilizado.",
+        choices=["mlp", "logistic", "gb"],
+        help="Modelo a ser utilizado (mlp, logistic, gb).",
     )
     return parser.parse_args()
 
@@ -151,10 +158,11 @@ def main() -> None:
     result = predict_action(args.html, profile=args.profile, model_type=args.model)
 
     print("=" * 60)
-    print(f"HTML:    {result['html']}")
-    print(f"Profile: {result['profile']}")
-    print(f"Predicted Action: {result['predicted_action']}")
-    print(f"Confidence: {result['confidence']:.4f}")
+    print(f"HTML:      {result['html']}")
+    print(f"Profile:   {result['profile']}")
+    print(f"Model:     {result['model_used']}")
+    print(f"Action:    {result['predicted_action']}")
+    print(f"Confidence:{result['confidence']:.4f}")
     print("Probabilities:")
     for cls, p in result["probabilities"].items():
         print(f"  {cls:12s} : {p:.4f}")

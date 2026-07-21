@@ -51,6 +51,8 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     for col in FEATURE_COLUMNS:
         if col in df.columns:
             df[col] = df[col].fillna(0).astype(int)
+        else:
+            df[col] = 0
     if "html" in df.columns:
         df["html"] = df["html"].fillna("")
     if "action" in df.columns:

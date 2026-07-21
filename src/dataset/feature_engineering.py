@@ -7,13 +7,14 @@
 Feature Engineering
 ==================
 
-Este módulo implementa a extração determinística de 11 features
+Este módulo implementa a extração determinística de 22 features
 estruturais a partir de uma string HTML. As features são projetadas
 para capturar sinais de barreiras de acessibilidade em componentes
-comuns de Objetos de Aprendizagem.
+comuns de Objetos de Aprendizagem do Moodle.
 
 Features extraídas
 ------------------
+Originais (11):
 - has_img (int 0/1)         : presença da tag <img>
 - has_alt (int 0/1)         : presença de atributo alt em alguma imagem
 - has_aria (int 0/1)        : presença de atributos aria-*
@@ -25,6 +26,19 @@ Features extraídas
 - invalid_heading (int 0/1) : quebra de hierarquia de headings
 - text_length (int)         : caracteres de texto visível
 - tag_count (int)           : total de tags
+
+Novas (11):
+- has_select (int 0/1)      : presença da tag <select>
+- has_textarea (int 0/1)    : presença da tag <textarea>
+- has_video (int 0/1)       : presença da tag <video>
+- has_audio (int 0/1)       : presença da tag <audio>
+- has_figure (int 0/1)      : presença da tag <figure>
+- has_svg (int 0/1)         : presença da tag <svg>
+- has_canvas (int 0/1)      : presença da tag <canvas>
+- select_count (int)        : contagem de <select>
+- textarea_count (int)      : contagem de <textarea>
+- media_count (int)         : contagem de <video> + <audio>
+- svg_canvas_count (int)    : contagem de <svg> + <canvas>
 """
 
 from __future__ import annotations
@@ -56,7 +70,7 @@ _TAG_REMOVAL = re.compile(r"<[^>]+>")
 
 
 # =====================================================================
-# Funções principais
+# Funções principais - Features Originais
 # =====================================================================
 
 
@@ -85,21 +99,7 @@ def heading_count(html: str) -> int:
 
 
 def invalid_heading(html: str) -> int:
-    """Detecta hierarquia de heading inválida.
-
-    Regras (alinhadas com WCAG e padrões de acessibilidade):
-    1. Se o primeiro heading não for h1, é inválido
-       (a estrutura do documento deve começar com h1).
-    2. Salto inválido: não se deve saltar de um heading para outro
-       mais do que 1 nível abaixo (h1 → h3, h2 → h4).
-       Avanços incrementais (h1 → h2 → h3) são válidos.
-    3. Regressão inválida: depois de avançar para um nível mais
-       profundo, voltar para um nível mais alto quebra a hierarquia
-       de outline (h3 → h1).
-
-    Esta função é intencionalmente conservadora: considera-se inválido
-    quando há regressão absoluta ou salto maior que 1.
-    """
+    """Detecta hierarquia de heading inválida."""
     if not html:
         return 0
 
@@ -119,14 +119,9 @@ def invalid_heading(html: str) -> int:
     if len(headings) < 2:
         return 0
 
-    # Regra 2: detectar salto maior que 1 (ex.: h1 → h3).
-    # Regra 3: detectar regressão (voltar a um nível mais alto).
+    # Regra 2 & 3: detectar salto maior que 1 ou regressão.
     for prev, curr in zip(headings, headings[1:]):
-        if curr > prev + 1:
-            # Salto inválido (ex.: h1 → h3, h2 → h4)
-            return 1
-        if curr < prev:
-            # Regressão (ex.: h3 → h1, h2 → h1)
+        if curr > prev + 1 or curr < prev:
             return 1
 
     return 0
@@ -134,37 +129,101 @@ def invalid_heading(html: str) -> int:
 
 def has_img(html: str) -> int:
     """Detecta presença da tag <img>."""
-    return 1 if re.search(r"<img\b", html, re.IGNORECASE) else 0
+    return 1 if re.search(r"<img\b", html or "", re.IGNORECASE) else 0
 
 
 def has_alt(html: str) -> int:
     """Detecta presença de atributo alt em alguma tag <img>."""
-    return 1 if _ALT_PATTERN.search(html) else 0
+    return 1 if _ALT_PATTERN.search(html or "") else 0
 
 
 def has_aria(html: str) -> int:
     """Detecta presença de atributos aria-*."""
-    return 1 if _ARIA_PATTERN.search(html) else 0
+    return 1 if _ARIA_PATTERN.search(html or "") else 0
 
 
 def has_button(html: str) -> int:
     """Detecta presença da tag <button>."""
-    return 1 if re.search(r"<button\b", html, re.IGNORECASE) else 0
+    return 1 if re.search(r"<button\b", html or "", re.IGNORECASE) else 0
 
 
 def has_form(html: str) -> int:
     """Detecta presença da tag <form>."""
-    return 1 if re.search(r"<form\b", html, re.IGNORECASE) else 0
+    return 1 if re.search(r"<form\b", html or "", re.IGNORECASE) else 0
 
 
 def has_link(html: str) -> int:
     """Detecta presença da tag <a>."""
-    return 1 if re.search(r"<a\b", html, re.IGNORECASE) else 0
+    return 1 if re.search(r"<a\b", html or "", re.IGNORECASE) else 0
 
 
 def has_table(html: str) -> int:
     """Detecta presença da tag <table>."""
-    return 1 if re.search(r"<table\b", html, re.IGNORECASE) else 0
+    return 1 if re.search(r"<table\b", html or "", re.IGNORECASE) else 0
+
+
+# =====================================================================
+# Funções principais - Novas Features Estruturais
+# =====================================================================
+
+
+def has_select(html: str) -> int:
+    """Detecta presença da tag <select>."""
+    return 1 if re.search(r"<select\b", html or "", re.IGNORECASE) else 0
+
+
+def has_textarea(html: str) -> int:
+    """Detecta presença da tag <textarea>."""
+    return 1 if re.search(r"<textarea\b", html or "", re.IGNORECASE) else 0
+
+
+def has_video(html: str) -> int:
+    """Detecta presença da tag <video>."""
+    return 1 if re.search(r"<video\b", html or "", re.IGNORECASE) else 0
+
+
+def has_audio(html: str) -> int:
+    """Detecta presença da tag <audio>."""
+    return 1 if re.search(r"<audio\b", html or "", re.IGNORECASE) else 0
+
+
+def has_figure(html: str) -> int:
+    """Detecta presença da tag <figure>."""
+    return 1 if re.search(r"<figure\b", html or "", re.IGNORECASE) else 0
+
+
+def has_svg(html: str) -> int:
+    """Detecta presença da tag <svg>."""
+    return 1 if re.search(r"<svg\b", html or "", re.IGNORECASE) else 0
+
+
+def has_canvas(html: str) -> int:
+    """Detecta presença da tag <canvas>."""
+    return 1 if re.search(r"<canvas\b", html or "", re.IGNORECASE) else 0
+
+
+def select_count(html: str) -> int:
+    """Conta a quantidade de tags <select>."""
+    return len(re.findall(r"<select\b", html or "", re.IGNORECASE))
+
+
+def textarea_count(html: str) -> int:
+    """Conta a quantidade de tags <textarea>."""
+    return len(re.findall(r"<textarea\b", html or "", re.IGNORECASE))
+
+
+def media_count(html: str) -> int:
+    """Conta a quantidade total de tags de mídia (<video> e <audio>)."""
+    videos = len(re.findall(r"<video\b", html or "", re.IGNORECASE))
+    audios = len(re.findall(r"<audio\b", html or "", re.IGNORECASE))
+    return videos + audios
+
+
+def svg_canvas_count(html: str) -> int:
+    """Conta a quantidade total de elementos gráficos inline (<svg> e <canvas>)."""
+    svgs = len(re.findall(r"<svg\b", html or "", re.IGNORECASE))
+    canvases = len(re.findall(r"<canvas\b", html or "", re.IGNORECASE))
+    return svgs + canvases
 
 
 # =====================================================================
@@ -173,24 +232,36 @@ def has_table(html: str) -> int:
 
 
 def extract_features(html: str) -> Dict[str, int]:
-    """Extrai todas as features estruturais de um HTML.
+    """Extrai todas as 22 features estruturais de um HTML.
 
     Args:
         html: string HTML do componente.
 
     Returns:
-        Dicionário com as 11 features.
+        Dicionário com as 22 features.
     """
+    html_safe = html or ""
     return {
-        "has_img": has_img(html),
-        "has_alt": has_alt(html),
-        "has_aria": has_aria(html),
-        "has_button": has_button(html),
-        "has_form": has_form(html),
-        "has_link": has_link(html),
-        "has_table": has_table(html),
-        "heading_count": heading_count(html),
-        "invalid_heading": invalid_heading(html),
-        "text_length": visible_text_length(html),
-        "tag_count": count_tags(html),
+        "has_img": has_img(html_safe),
+        "has_alt": has_alt(html_safe),
+        "has_aria": has_aria(html_safe),
+        "has_button": has_button(html_safe),
+        "has_form": has_form(html_safe),
+        "has_link": has_link(html_safe),
+        "has_table": has_table(html_safe),
+        "heading_count": heading_count(html_safe),
+        "invalid_heading": invalid_heading(html_safe),
+        "text_length": visible_text_length(html_safe),
+        "tag_count": count_tags(html_safe),
+        "has_select": has_select(html_safe),
+        "has_textarea": has_textarea(html_safe),
+        "has_video": has_video(html_safe),
+        "has_audio": has_audio(html_safe),
+        "has_figure": has_figure(html_safe),
+        "has_svg": has_svg(html_safe),
+        "has_canvas": has_canvas(html_safe),
+        "select_count": select_count(html_safe),
+        "textarea_count": textarea_count(html_safe),
+        "media_count": media_count(html_safe),
+        "svg_canvas_count": svg_canvas_count(html_safe),
     }

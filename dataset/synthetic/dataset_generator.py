@@ -15,7 +15,7 @@ componentes HTML de Objetos de Aprendizagem (OAs) do Moodle.
 
 Cada amostra contém:
 - id, profile, html (entrada)
-- 11 features estruturais extraídas do HTML
+- 22 features estruturais extraídas do HTML
 - action (rótulo)
 
 Classes geradas (balanceadas, 5.000 cada):
@@ -315,12 +315,23 @@ def generate_dataset(
                 "id": counter,
                 "profile": "VISUAL",
                 "html": html,
+                "component_type": "synthetic",
+                "source_type": "SYNTHETIC",
+                "course_id": 0,
+                "activity_id": 0,
+                "url": "http://synthetic.local",
+                "timestamp": "",
                 **features,
                 "action": action,
+                "wcag_violations": "[]",
             })
             counter += 1
 
-    df = pd.DataFrame(records, columns=DATASET_COLUMNS)
+    df = pd.DataFrame(records)
+    for col in DATASET_COLUMNS:
+        if col not in df.columns:
+            df[col] = 0 if "has_" in col or "count" in col else ""
+    df = df[DATASET_COLUMNS]
     print(f"[INFO] Dataset gerado: {df.shape[0]} linhas × {df.shape[1]} colunas")
     print(f"[INFO] Distribuição:\n{df['action'].value_counts()}")
     return df

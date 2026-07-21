@@ -4,121 +4,53 @@
 
 | Atributo | Valor |
 |----------|-------|
-| Tipo | Sintético (gerado por templates) |
-| Tamanho | 20.000 registros (5.000 por classe) |
-| Classes | 4 (ADD_ALT, ADD_ARIA, FIX_HEADING, NO_ACTION) |
-| Perfil implementado | VISUAL |
-| Formato | CSV (UTF-8) |
-| Colunas | 14 (id + 12 features + action) |
+| Origem | Híbrida (HTMLs reais do Moodle + Gerador Sintético) |
+| Modos | `REAL_ONLY`, `SYNTHETIC_ONLY`, `HYBRID` |
+| Rótulos | Multi-label (Critérios WCAG) e Classes de Ação (`ADD_ALT`, `ADD_ARIA`, `FIX_HEADING`, `NO_ACTION`) |
+| Estratégia de Rotulação | Weak Supervision via axe-core |
+| Formato | CSV (UTF-8) e Apache Parquet (`accessibility_dataset.parquet`) |
+| Colunas | 33 (Metadados + 22 Features + Rótulos WCAG/Ação) |
 | Seed | 42 |
 
-## 2. Schema
+---
+
+## 2. Modos de Operação do Dataset Builder
+
+1. **`REAL_ONLY`**: Coleta e fragmenta componentes HTML diretamente de instâncias Moodle através do `MoodleAdapter` e `ComponentExtractor`, anotados via `AxeLabeler`.
+2. **`SYNTHETIC_ONLY`**: Gera dados parametrizados através de templates sintéticos para testes de estresse e cenários controlados.
+3. **`HYBRID`**: Combina HTMLs reais do Moodle com HTMLs sintéticos para ampliar a variabilidade e cobertura do dataset.
+
+---
+
+## 3. Exemplo Concreto dos Registros (`accessibility_dataset.csv`)
+
+| id | profile | html | component_type | source_type | action | wcag_violations | has_img | has_alt | has_aria | invalid_heading | tag_count |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **1** | `VISUAL` | `<img src="aula1.png">` | `img` | `REAL_MOODLE` | **`ADD_ALT`** | `["WCAG_1_1_1"]` | 1 | 0 | 0 | 0 | 1 |
+| **2** | `VISUAL` | `<button class="icon"></button>` | `button` | `REAL_MOODLE` | **`ADD_ARIA`** | `["WCAG_4_1_2"]` | 0 | 0 | 0 | 0 | 1 |
+| **3** | `VISUAL` | `<h3>Seção de Conteúdo</h3>` | `h3` | `REAL_MOODLE` | **`FIX_HEADING`** | `["WCAG_1_3_1"]` | 0 | 0 | 0 | 1 | 1 |
+| **4** | `VISUAL` | `<img src="aula1.png" alt="Aula 1">` | `img` | `REAL_MOODLE` | **`NO_ACTION`** | `[]` | 1 | 1 | 0 | 0 | 1 |
+
+---
+
+## 4. Schema Completo
 
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
-| `id` | int | Identificador único (1..20000) |
-| `profile` | str | Perfil do usuário. atualmente só `VISUAL`, porém o código permite adicionar outros. |
+| `id` | int | Identificador único |
+| `profile` | str | Perfil de acessibilidade (`VISUAL`) |
 | `html` | str | Trecho HTML do componente |
-| `has_img` | int (0/1) | Contém tag `<img>` |
-| `has_alt` | int (0/1) | Contém atributo `alt` |
-| `has_aria` | int (0/1) | Contém atributos ARIA |
-| `has_button` | int (0/1) | Contém tag `<button>` |
-| `has_form` | int (0/1) | Contém tag `<form>` |
-| `has_link` | int (0/1) | Contém tag `<a>` |
-| `has_table` | int (0/1) | Contém tag `<table>` |
-| `heading_count` | int | Número de headings (`<h1>`–`<h6>`) |
-| `invalid_heading` | int (0/1) | Hierarquia de heading inválida |
-| `text_length` | int | Comprimento do texto visível |
-| `tag_count` | int | Quantidade total de tags |
-| `action` | str | Classe alvo: ADD_ALT, ADD_ARIA, FIX_HEADING, NO_ACTION |
-
-## 3. Distribuição de Classes
-
-| Classe | Contagem | % |
-|--------|----------|---|
-| ADD_ALT | 5.000 | 25% |
-| ADD_ARIA | 5.000 | 25% |
-| FIX_HEADING | 5.000 | 25% |
-| NO_ACTION | 5.000 | 25% |
-| **Total** | **20.000** | **100%** |
-
-Dataset perfeitamente balanceado.
-
-## 4. Processo de Geração
-
-### 4.1. Templates
-
-Cada classe é gerada a partir de uma família de templates parametrizados:
-
-* **Imagens** com e sem `alt` → ADD_ALT e NO_ACTION.
-* **Botões** com e sem `aria-label` → ADD_ARIA e NO_ACTION.
-* **Inputs** sem `aria-*` → ADD_ARIA.
-* **Links** sem `aria-label` → ADD_ARIA.
-* **Hierarquia de headings** quebrada → FIX_HEADING.
-* **Hierarquia de headings** correta → NO_ACTION.
-* **Tabelas** com `<th>` apropriado → NO_ACTION.
-
-### 4.2. Aleatoriedade Controlada
-
-* URLs, textos, IDs e classes CSS são amostrados de dicionários pré-definidos.
-* Variações sintáticas evitam memorização por *overfitting* lexical.
-
-## 5. Limitações
-
-1. **Sintético** — não captura ruído de OAs reais.
-2. **Estilo único** — elementos seguem padrões *modernos*; OAs antigos do Moodle podem diferir.
-3. **Sem conteúdo textual rico** — os textos são curtos e controlados.
-4. **Sem atributos CSS** — não considera styling ou layout.
-5. **Idioma** — textos predominantemente em português; outros idiomas podem introduzir viés.
-
-## 6. Possíveis Vieses
-
-| Viés | Impacto |
-|------|---------|
-| Distribuição uniforme de classes | Subestima a prevalência real de NO_ACTION |
-| Templates com vocabulário controlado | Modelos podem superajustar a *palavras* |
-| Ausência de HTML malformado | Não generaliza para cenários do mundo real |
-| Perfil único (VISUAL) | Não avalia barreiras motoras/auditivas |
-
-## 7. Divisão Treino/Validação/Teste
-
-```python
-train, val, test = train_test_split(
-    df, test_size=0.30, stratify=df['action'], random_state=42
-)
-val, test = train_test_split(
-    temp, test_size=0.50, stratify=temp['action'], random_state=42
-)
-```
-
-| Split | Proporção | Tamanho |
-|-------|-----------|---------|
-| Treino | 70% | 14.000 |
-| Validação | 15% | 3.000 |
-| Teste | 15% | 3.000 |
-
-Divisão **estratificada** preserva a distribuição de classes.
-
-## 8. Validação Cruzada (opcional)
-
-Para análise de variância do modelo, recomenda-se *k-fold* (k=5) estratificado, com geração de métricas em cada *fold*. Implementação futura em `src/evaluation/cross_validation.py`.
-
-## 9. Versionamento
-
-| Versão | Mudança |
-|--------|---------|
-| v1.0 | 20.000 amostras, 4 classes, perfil VISUAL |
-| v1.1 (futuro) | Adicionar AUDITIVO, MOTOR, COGNITIVO |
-| v2.0 (futuro) | Substituir templates por HTML real do Moodle |
-
-## 10. Como Inspecionar
-
-```python
-import pandas as pd
-
-df = pd.read_csv("dataset/raw/accessibility_dataset.csv")
-print(df.shape)
-print(df.head())
-print(df["action"].value_counts())
-print(df.describe())
-```
+| `component_type` | str | Tag/Elemento (`img`, `button`, `form`, `input`, `select`, `textarea`, etc.) |
+| `source_type` | str | Origem do dado (`REAL_MOODLE` ou `SYNTHETIC`) |
+| `course_id` | int | ID do curso de origem no Moodle |
+| `activity_id` | int | ID da atividade de origem no Moodle |
+| `url` | str | URL da página/atividade de origem |
+| `timestamp` | str | Data/hora de extração |
+| **Features Estruturais (22)** | | |
+| `has_img`, `has_alt`, `has_aria`, `has_button`, `has_form`, `has_link`, `has_table` | int (0/1) | Presença de elementos/atributos originais |
+| `heading_count`, `invalid_heading`, `text_length`, `tag_count` | int | Contagens estruturais originais |
+| `has_select`, `has_textarea`, `has_video`, `has_audio`, `has_figure`, `has_svg`, `has_canvas` | int (0/1) | Presença de novos elementos |
+| `select_count`, `textarea_count`, `media_count`, `svg_canvas_count` | int | Novas contagens |
+| **Rótulos Target** | | |
+| `action` | str | Ação recomendada (`ADD_ALT`, `ADD_ARIA`, `FIX_HEADING`, `NO_ACTION`) |
+| `wcag_violations` | str (JSON) | Lista de critérios WCAG violados pelo axe-core |
