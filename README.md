@@ -248,22 +248,42 @@ accessibility-dl-moodle/
 
 ## 11. Instalação e Preparação do Ambiente
 
+### 1. Criar e Configurar o Ambiente
+
 ```bash
 # 1. Clonar o repositório
 git clone https://github.com/unicsoftware/accessibility-dl-moodle.git
 cd accessibility-dl-moodle
 
-# 2. Criar e ativar ambiente virtual Python
+# 2. Criar o ambiente virtual Python (.venv)
 python3 -m venv .venv
-source .venv/bin/activate    # Linux/macOS
+
+# 3. Ativar o ambiente virtual
+source .venv/bin/activate    # Linux / macOS
 # .venv\Scripts\activate     # Windows
 
-# 3. Instalar dependências
+# 4. Instalar dependências
 pip install -r requirements.txt
 
-# 4. Registrar kernel no Jupyter (opcional)
+# 5. Registrar kernel no Jupyter (opcional)
 python -m ipykernel install --user --name accessibility-dl-moodle
 ```
+
+### 2. Gerenciando o Ambiente Virtual (Abrir e Fechar)
+
+* **Para abrir / ativar o ambiente virtual:**
+  ```bash
+  source .venv/bin/activate    # Linux / macOS
+  # .venv\Scripts\activate     # Windows
+  ```
+  *(O indicador `(.venv)` aparecerá no início do prompt do seu terminal).*
+
+* **Para fechar / desativar o ambiente virtual:**
+  ```bash
+  deactivate
+  ```
+
+> **Nota:** Ao utilizar os comandos `make` (`make predict`, `make train`, `make dataset`, etc.), o `Make` executa os scripts diretamente via `.venv/bin/python`, portanto não é necessário ativar ou desativar o ambiente manualmente.
 
 ---
 
@@ -321,6 +341,7 @@ Navegue pela interface até a pasta `notebooks/` e execute na ordem:
 4. **`04_treinamento_mlp.ipynb`** — Treinamento da rede neural PyTorch.
 5. **`05_avaliacao_modelos.ipynb`** — Comparação gráfica do desempenho dos modelos.
 6. **`06_analise_erros.ipynb`** — Diagnóstico qualitativo dos erros e matrizes de confusão.
+7. **`07_validacao_predicoes.ipynb`** — Validação visual de inferência, comparação em tempo real e playground interativo.
 
 > **Execução Automática de Todos os Notebooks:** `make notebooks`
 
