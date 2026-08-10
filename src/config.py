@@ -78,7 +78,10 @@ MOODLE_EXTRACTION_MODE: str = "DIRECT_URL"
 # URLs reais do Moodle para extração no modo 'DIRECT_URL'
 MOODLE_TARGET_URLS: list[str] = [
     "https://moodle.ufabc.edu.br",
-    "https://moodle.ufabc.edu.br/mod/offlinequiz/view.php?id=44477"
+    "https://moodle.ufabc.edu.br/mod/offlinequiz/view.php?id=44477",
+    "https://moodle.ufabc.edu.br/mod/vpl/view.php?id=53047",
+    "https://moodle.ufabc.edu.br/mod/vpl/view.php?id=53142",
+    "https://moodle.ufabc.edu.br/course/view.php?id=643"
 ]
 
 # =====================================================================
