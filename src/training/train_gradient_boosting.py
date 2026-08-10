@@ -29,6 +29,7 @@ from src.config import (  # noqa: E402
     TEST_FILE,
     TRAIN_FILE,
     VAL_FILE,
+    get_rel_path,
 )
 from src.dataset.loader import load_splits  # noqa: E402
 from src.dataset.preprocessing import preprocess_pipeline  # noqa: E402
@@ -76,7 +77,7 @@ def main() -> None:
 
     # Persistência
     model.save(GB_MODEL_FILE)
-    print(f"[INFO] Modelo salvo em {GB_MODEL_FILE}")
+    print(f"[INFO] Modelo salvo em {get_rel_path(GB_MODEL_FILE)}")
 
     # Salva predições no conjunto de teste
     y_pred = model.predict(X_test)
@@ -102,7 +103,7 @@ def main() -> None:
         ROOT / "results" / "metadata_gb.json",
     )
 
-    print(f"[INFO] Métricas salvas em {METRICS_FILE}")
+    print(f"[INFO] Métricas salvas em {get_rel_path(METRICS_FILE)}")
 
 
 if __name__ == "__main__":

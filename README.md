@@ -187,7 +187,8 @@ accessibility-dl-moodle/
 │   ├── 03_treinamento_regressao_logistica.ipynb
 │   ├── 04_treinamento_mlp.ipynb
 │   ├── 05_avaliacao_modelos.ipynb
-│   └── 06_analise_erros.ipynb
+│   ├── 06_analise_erros.ipynb
+│   └── 07_validacao_predicoes.ipynb
 │
 ├── src/                       ← Código-fonte das 8 camadas
 │   ├── config.py
@@ -339,13 +340,47 @@ PYTHONPATH=. .venv/bin/python -m pytest -v tests/
 
 ## 15. Execução de Inferência em um Elemento HTML
 
-Para classificar um elemento HTML e obter a recomendação de acessibilidade:
+Para classificar um elemento HTML e obter a recomendação de acessibilidade, você pode utilizar o `make predict` (recomendado) ou executar o script Python diretamente via linha de comando.
+
+### Parâmetros e Valores Aceitos
+
+| Variável (Make) | Flag (CLI) | Descrição | Valores Aceitos | Valor Padrão |
+| :--- | :--- | :--- | :--- | :--- |
+| `HTML` | `--html` | Fragmento HTML do elemento a ser analisado | Qualquer trecho HTML (ex.: `'<img src="a.jpg">'`, `'<button>OK</button>'`) | `'<img src="foto.png">'` |
+| `PROFILE` | `--profile` | Perfil de acessibilidade do usuário | `VISUAL` (ativo nesta versão), `AUDITIVO`, `MOTOR`, `COGNITIVO` | `VISUAL` |
+| `MODEL` | `--model` | Modelo treinado a ser utilizado | `mlp` (Neural Network), `logistic` (Regressão Logística), `gb` (Gradient Boosting) | `mlp` |
+
+---
+
+### Opção 1: Via `make predict` (Recomendado)
+
+O comando `make` abstrai a configuração do `PYTHONPATH` e a chamada ao ambiente virtual.
 
 ```bash
-# Exemplo 1: Imagem sem atributo alt (Retorna ADD_ALT)
+# 1. Execução básica com parâmetros padrão (HTML='<img src="foto.png">', PROFILE=VISUAL, MODEL=mlp)
+make predict
+
+# 2. Imagem sem atributo alt usando MLP (Retorna ADD_ALT)
+make predict HTML='<img src="foto.png">' MODEL=mlp
+
+# 3. Imagem acessível com atributo alt usando Gradient Boosting (Retorna NO_ACTION)
+make predict HTML='<img src="foto.png" alt="Descrição da foto">' MODEL=gb
+
+# 4. Elemento interativo com Regressão Logística (Retorna ADD_ARIA)
+make predict HTML='<button>Salvar</button>' PROFILE=VISUAL MODEL=logistic
+```
+
+> **Nota:** As variáveis do Make (`HTML`, `PROFILE`, `MODEL`) devem ser passadas em **maiúsculas** e sem espaços ao redor do sinal `=`.
+
+---
+
+### Opção 2: Via Linha de Comando Direta (`python`)
+
+```bash
+# Exemplo 1: Imagem sem atributo alt usando MLP (Retorna ADD_ALT)
 PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.png">' --profile VISUAL --model mlp
 
-# Exemplo 2: Imagem acessível com atributo alt (Retorna NO_ACTION)
+# Exemplo 2: Imagem acessível com atributo alt usando Gradient Boosting (Retorna NO_ACTION)
 PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.png" alt="Descrição da foto">' --profile VISUAL --model gb
 ```
 

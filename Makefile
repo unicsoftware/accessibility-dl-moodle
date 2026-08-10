@@ -7,13 +7,18 @@
 export PYTHONPATH := .
 
 # Variáveis --------------------------------------------------------------
-PYTHON        ?= python3
-PIP           ?= $(PYTHON) -m pip
-PYTEST        ?= $(PYTHON) -m pytest
-NOTEBOOK      ?= $(PYTHON) -m jupyter notebook
-NBconvert     ?= $(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace
-SEED          ?= 42
-MODE          ?= HYBRID
+VENV_PYTHON   := .venv/bin/python
+PYTHON        := $(shell if [ -f $(VENV_PYTHON) ]; then echo $(VENV_PYTHON); else echo python3; fi)
+PIP           := $(PYTHON) -m pip
+PYTEST        := $(PYTHON) -m pytest
+NOTEBOOK      := $(PYTHON) -m jupyter notebook
+NBconvert     := $(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace
+SEED          := 42
+MODE          := HYBRID
+
+HTML          ?= <img src="foto.png">
+PROFILE       ?= VISUAL
+MODEL         ?= mlp
 
 # Diretórios -------------------------------------------------------------
 DATASET_RAW   = dataset/raw
@@ -59,6 +64,7 @@ notebooks:
 	$(NBconvert) notebooks/04_treinamento_mlp.ipynb
 	$(NBconvert) notebooks/05_avaliacao_modelos.ipynb
 	$(NBconvert) notebooks/06_analise_erros.ipynb
+	$(NBconvert) notebooks/07_validacao_predicoes.ipynb
 
 train:
 	$(PYTHON) src/training/train_logistic.py --seed $(SEED)
@@ -69,7 +75,7 @@ evaluate:
 	$(PYTHON) src/evaluation/reports.py
 
 predict:
-	$(PYTHON) src/inference/predict.py --html '<img src="foto.png">' --profile VISUAL
+	$(PYTHON) src/inference/predict.py --html '$(HTML)' --profile $(PROFILE) --model $(MODEL)
 
 tests:
 	$(PYTEST) -v tests/ --cov=src --cov-report=term-missing

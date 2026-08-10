@@ -102,11 +102,11 @@ class DatasetBuilder:
         final_df.to_csv(csv_path, index=False, encoding="utf-8")
         try:
             final_df.to_parquet(parquet_path, index=False)
-            logger.info(f"Dataset Parquet exportado em '{parquet_path}'.")
+            logger.info(f"Dataset Parquet exportado em '{config.get_rel_path(parquet_path)}'.")
         except Exception as err:
             logger.warning(f"Exportação Parquet ignorada ({err}). Instale 'pyarrow' ou 'fastparquet' para exportação Parquet.")
 
-        logger.info(f"Dataset exportado com sucesso em '{csv_path}' ({len(final_df)} registros).")
+        logger.info(f"Dataset exportado com sucesso em '{config.get_rel_path(csv_path)}' ({len(final_df)} registros).")
         return final_df
 
     def _generate_real_data(self) -> pd.DataFrame:

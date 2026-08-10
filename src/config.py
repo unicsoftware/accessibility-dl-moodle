@@ -13,6 +13,7 @@ ser feito aqui para garantir reprodutibilidade.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 # =====================================================================
@@ -21,6 +22,34 @@ from pathlib import Path
 
 # Caminho raiz do projeto (parent do diretório 'src')
 ROOT_DIR: Path = Path(__file__).resolve().parents[1]
+
+
+def get_rel_path(path: str | Path | None) -> str:
+    """Retorna o caminho relativo a partir do diretório principal (accessibility-dl-moodle)."""
+    if path is None:
+        return ""
+    try:
+        s = str(path)
+        project_name = ROOT_DIR.name  # "accessibility-dl-moodle"
+        if project_name in s:
+            for sep in [os.sep, "/"]:
+                target = project_name + sep
+                if target in s:
+                    rel = s.split(target, 1)[1]
+                    return rel if rel else "."
+            if s.endswith(project_name):
+                return "."
+
+        p = Path(path)
+        if p.is_absolute():
+            try:
+                return str(p.relative_to(ROOT_DIR))
+            except ValueError:
+                return os.path.relpath(p, ROOT_DIR)
+        return str(p)
+    except Exception:
+        return str(path)
+
 
 DATA_DIR: Path = ROOT_DIR / "dataset"
 RAW_DIR: Path = DATA_DIR / "raw"

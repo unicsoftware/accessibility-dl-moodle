@@ -17,6 +17,8 @@ import numpy as np
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 
+from src.config import get_rel_path
+
 
 def plot_confusion_matrix(
     y_true: np.ndarray,
@@ -66,4 +68,4 @@ def plot_confusion_matrix(
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=120, bbox_inches="tight")
     plt.close(fig)
-    print(f"[INFO] Matriz de confusão salva em {path}")
+    print(f"[INFO] Matriz de confusão salva em {get_rel_path(path)}")

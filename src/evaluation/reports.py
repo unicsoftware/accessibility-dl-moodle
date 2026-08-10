@@ -38,6 +38,7 @@ from src.config import (  # noqa: E402
     PREDICTIONS_FILE,
     TEST_FILE,
     WCAG_EVALUATION_FILE,
+    get_rel_path,
 )
 from src.dataset.loader import load_test  # noqa: E402
 from src.dataset.preprocessing import preprocess_pipeline  # noqa: E402
@@ -64,36 +65,36 @@ def main() -> None:
 
     # 1. Logistic Regression
     if LOGISTIC_MODEL_FILE.exists():
-        print(f"[INFO] Carregando {LOGISTIC_MODEL_FILE}...")
+        print(f"[INFO] Carregando {get_rel_path(LOGISTIC_MODEL_FILE)}...")
         log_model = LogisticAccessibilityModel.load(LOGISTIC_MODEL_FILE)
         y_pred_log = log_model.predict(X_test)
         y_pred_log_str = le.inverse_transform(y_pred_log)
         results["logistic_regression"] = compute_classification_metrics(y_test, y_pred_log)
         predictions["logistic_regression"] = y_pred_log_str
     else:
-        print(f"[WARN] Modelo logistic não encontrado em {LOGISTIC_MODEL_FILE}")
+        print(f"[WARN] Modelo logistic não encontrado em {get_rel_path(LOGISTIC_MODEL_FILE)}")
 
     # 2. Gradient Boosting
     if GB_MODEL_FILE.exists():
-        print(f"[INFO] Carregando {GB_MODEL_FILE}...")
+        print(f"[INFO] Carregando {get_rel_path(GB_MODEL_FILE)}...")
         gb_model = GradientBoostingAccessibilityModel.load(GB_MODEL_FILE)
         y_pred_gb = gb_model.predict(X_test)
         y_pred_gb_str = le.inverse_transform(y_pred_gb)
         results["gradient_boosting"] = compute_classification_metrics(y_test, y_pred_gb)
         predictions["gradient_boosting"] = y_pred_gb_str
     else:
-        print(f"[WARN] Modelo Gradient Boosting não encontrado em {GB_MODEL_FILE}")
+        print(f"[WARN] Modelo Gradient Boosting não encontrado em {get_rel_path(GB_MODEL_FILE)}")
 
     # 3. MLP
     if MLP_MODEL_FILE.exists():
-        print(f"[INFO] Carregando {MLP_MODEL_FILE}...")
+        print(f"[INFO] Carregando {get_rel_path(MLP_MODEL_FILE)}...")
         mlp_model = MLPAccessibilityModel.load(MLP_MODEL_FILE)
         y_pred_mlp = mlp_model.predict(X_test)
         y_pred_mlp_str = le.inverse_transform(y_pred_mlp)
         results["mlp"] = compute_classification_metrics(y_test, y_pred_mlp)
         predictions["mlp"] = y_pred_mlp_str
     else:
-        print(f"[WARN] Modelo MLP não encontrado em {MLP_MODEL_FILE}")
+        print(f"[WARN] Modelo MLP não encontrado em {get_rel_path(MLP_MODEL_FILE)}")
 
     if not results:
         print("[ERROR] Nenhum modelo encontrado. Execute os scripts de treinamento primeiro.")
@@ -101,7 +102,7 @@ def main() -> None:
 
     # Métricas globais consolidadas
     export_metrics(results, METRICS_FILE)
-    print(f"[INFO] Métricas consolidadas salvas em {METRICS_FILE}")
+    print(f"[INFO] Métricas consolidadas salvas em {get_rel_path(METRICS_FILE)}")
 
     # Classification report (do MLP ou do melhor disponível)
     report_target = "mlp" if "mlp" in predictions else next(iter(predictions))
@@ -118,7 +119,7 @@ def main() -> None:
         f.write(f"Classification Report — modelo: {report_target}\n")
         f.write("=" * 60 + "\n")
         f.write(cls_report)
-    print(f"[INFO] Classification report salvo em {CLASSIFICATION_REPORT_FILE}")
+    print(f"[INFO] Classification report salvo em {get_rel_path(CLASSIFICATION_REPORT_FILE)}")
 
     # Matriz de confusão (do modelo selecionado)
     plot_confusion_matrix(
@@ -150,7 +151,7 @@ def main() -> None:
         wcag_metrics = compute_wcag_metrics(y_true_wcag, y_pred_wcag)
         wcag_df = pd.DataFrame.from_dict(wcag_metrics, orient="index")
         export_dataframe(wcag_df, WCAG_EVALUATION_FILE)
-        print(f"[INFO] Avaliação por critério WCAG salva em {WCAG_EVALUATION_FILE}")
+        print(f"[INFO] Avaliação por critério WCAG salva em {get_rel_path(WCAG_EVALUATION_FILE)}")
 
     # Predições consolidadas
     test_df_clean = test_df.drop_duplicates(subset="html", keep="first").reset_index(drop=True)
@@ -163,7 +164,7 @@ def main() -> None:
 
     pred_df = pd.DataFrame(pred_dict)
     export_dataframe(pred_df, PREDICTIONS_FILE)
-    print(f"[INFO] Predições consolidadas em {PREDICTIONS_FILE}")
+    print(f"[INFO] Predições consolidadas em {get_rel_path(PREDICTIONS_FILE)}")
 
     # Sumário no terminal
     print("\n[RESULT] Sumário de comparação entre modelos:")

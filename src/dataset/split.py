@@ -26,6 +26,7 @@ from src.config import (
     VAL_FILE,
     VAL_SIZE,
     TEST_FILE,
+    get_rel_path,
 )
 
 
@@ -99,7 +100,7 @@ def save_splits(
     train_df.to_csv(out_dir / "train.csv", index=False, encoding="utf-8")
     val_df.to_csv(out_dir / "validation.csv", index=False, encoding="utf-8")
     test_df.to_csv(out_dir / "test.csv", index=False, encoding="utf-8")
-    print(f"[INFO] Splits salvos em {out_dir}")
+    print(f"[INFO] Splits salvos em {get_rel_path(out_dir)}")
 
 
 def load_and_split(
@@ -140,10 +141,10 @@ if __name__ == "__main__":
 
     input_path = Path(args.input)
     if not input_path.exists():
-        print(f"[ERROR] Arquivo de entrada não encontrado: {input_path}")
+        print(f"[ERROR] Arquivo de entrada não encontrado: {get_rel_path(input_path)}")
         sys.exit(1)
 
-    print(f"[INFO] Carregando dataset de {input_path}...")
+    print(f"[INFO] Carregando dataset de {get_rel_path(input_path)}...")
     df = pd.read_csv(input_path)
     load_and_split(df, out_dir=args.out_dir, seed=args.seed)
 

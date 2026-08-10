@@ -377,9 +377,13 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     df = generate_dataset(samples=args.samples, seed=args.seed)
-    df.to_csv(output_path, index=False, encoding="utf-8")
+    try:
+        from src.config import get_rel_path
+        rel_out = get_rel_path(output_path)
+    except ImportError:
+        rel_out = os.path.relpath(output_path)
 
-    print(f"\n[OK] Dataset salvo em: {output_path}")
+    print(f"\n[OK] Dataset salvo em: {rel_out}")
     print(f"[OK] Tamanho do arquivo: {output_path.stat().st_size / 1024:.1f} KB")
 
 

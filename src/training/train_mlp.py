@@ -33,6 +33,7 @@ from src.config import (  # noqa: E402
     TEST_FILE,
     TRAIN_FILE,
     VAL_FILE,
+    get_rel_path,
 )
 from src.dataset.loader import load_splits  # noqa: E402
 from src.dataset.preprocessing import preprocess_pipeline  # noqa: E402
@@ -86,7 +87,7 @@ def main() -> None:
         print(f"  {k}: {v:.4f}")
 
     model.save(MLP_MODEL_FILE)
-    print(f"[INFO] Modelo salvo em {MLP_MODEL_FILE}")
+    print(f"[INFO] Modelo salvo em {get_rel_path(MLP_MODEL_FILE)}")
 
     # Predições
     y_pred = model.predict(X_test)
@@ -121,7 +122,7 @@ def main() -> None:
         learning_curve_path = ROOT / "results" / "learning_curve_mlp.png"
         fig.savefig(learning_curve_path, dpi=120)
         plt.close(fig)
-        print(f"[INFO] Curva de aprendizado salva em {learning_curve_path}")
+        print(f"[INFO] Curva de aprendizado salva em {get_rel_path(learning_curve_path)}")
     except Exception as e:
         print(f"[WARN] Não foi possível gerar learning curve: {e}")
 
@@ -142,7 +143,7 @@ def main() -> None:
         ROOT / "results" / "metadata_mlp.json",
     )
 
-    print(f"[INFO] Métricas salvas em {METRICS_FILE}")
+    print(f"[INFO] Métricas salvas em {get_rel_path(METRICS_FILE)}")
 
 
 if __name__ == "__main__":
