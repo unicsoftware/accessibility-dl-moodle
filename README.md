@@ -170,6 +170,10 @@ accessibility-dl-moodle/
 │   ├── dataset.md
 │   └── metricas.md
 │
+├── artefatos-pesquisa/        ← Scripts de benchmark e validação da tese
+│   ├── README.md              ← Documentação dos artefatos de pesquisa
+│   └── benchmark_latencia.py  ← Benchmark comparativo (Ontologia Local vs LLM Remota)
+│
 ├── dataset/                   ← Datasets gerados
 │   ├── raw/
 │   │   ├── accessibility_dataset.csv
@@ -283,7 +287,7 @@ python -m ipykernel install --user --name accessibility-dl-moodle
   deactivate
   ```
 
-> **Nota:** Ao utilizar os comandos `make` (`make predict`, `make train`, `make dataset`, etc.), o `Make` executa os scripts diretamente via `.venv/bin/python`, portanto não é necessário ativar ou desativar o ambiente manualmente.
+> **Nota:** Ao utilizar os comandos `make` (`make benchmark`, `make predict`, `make train`, `make dataset`, etc.), o `Make` executa os scripts diretamente via `.venv/bin/python`, portanto não é necessário ativar ou desativar o ambiente manualmente.
 
 ---
 
@@ -407,7 +411,48 @@ PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.pn
 
 ---
 
-## 16. Como Adicionar Novas Classes e Perfis
+## 16. Artefatos de Pesquisa e Benchmark de Latência / Custo
+
+Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pesquisa/`](artefatos-pesquisa/) contém experimentos que comparam empiricamente a abordagem **Simbólica / Ontológica Local** (*IMS AccessForAll / EARL via RDF*) contra **Modelos de Linguagem Remotos (LLMs)** em 3 cenários reais de adaptação de acessibilidade no Moodle:
+
+### 16.1. Cenários Avaliados
+
+1. **Cenário 1 — Decisão Booleana de Perfil:** Verifica se um estudante com deficiência visual necessita de alto contraste (`requiresHighContrast`).
+   - *Ontologia (SPARQL):* `SELECT ?val WHERE { ex:AlunoVisual afa:requiresHighContrast ?val . }` $\rightarrow$ `['true']` (**~59.8 ms**, custo zero).
+   - *LLM Remota:* Prompt estruturado em JSON $\rightarrow$ `{"requiresHighContrast": true}` (**~1.203 ms**, $0.000080 USD).
+2. **Cenário 2 — Classificação de Elemento HTML:** Determina a ação corretiva WCAG para `<img src="grafico.png">` sem atributo `alt`.
+   - *Ontologia/Regra EARL:* Consulta determinística $\rightarrow$ `['ADD_ALT']` (**~14.4 ms**, custo zero).
+   - *LLM Remota:* Prompt de classificação de conformidade $\rightarrow$ `ADD_ALT` (**~1.202 ms**, $0.000085 USD).
+3. **Cenário 3 — Perfil Complexo / Multi-necessidades:** Consulta lista completa de adaptações para estudante com deficiência múltipla (Baixa Visão + Motora).
+   - *Ontologia (SPARQL):* Consulta multi-propriedades $\rightarrow$ `[alto contraste, teclado, fontes ampliadas]` (**~11.1 ms**, custo zero).
+   - *LLM Remota:* Prompt de extração multi-critério em JSON (**~1.204 ms**, $0.000091 USD).
+
+### 16.2. Tabela Resumo Consolidada
+
+| Cenário Avaliado | Ontologia Local (RDF/SPARQL) | LLM Remota (Nuvem) | Aceleração | Custo LLM |
+| :--- | :---: | :---: | :---: | :---: |
+| **Cenário 1:** Decisão Booleana (Contraste) | **59.80 ms** | 1.203.12 ms | **20x mais rápido** | $0.000080 USD |
+| **Cenário 2:** Classificação WCAG (`ADD_ALT`) | **14.44 ms** | 1.202.92 ms | **83x mais rápido** | $0.000085 USD |
+| **Cenário 3:** Perfil Múltiplo (Baixa Visão + Motor) | **11.16 ms** | 1.204.28 ms | **108x mais rápido** | $0.000091 USD |
+
+### 16.3. Como Executar o Benchmark
+
+```bash
+# Executa todos os 3 cenários (Recomendado)
+make benchmark
+
+# Executa um cenário específico (ex: Cenário 2)
+make benchmark SCENARIO=2
+
+# Modo interativo (seleção no terminal)
+PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --interactive
+```
+
+> **Documentação Completa:** Consulte [`artefatos-pesquisa/README.md`](artefatos-pesquisa/README.md) para o glossário completo de siglas (*IMS*, *LLM*, *EARL*, *RDF*, *SPARQL*), diagrama conceitual e justificativas científicas para a banca.
+
+---
+
+## 17. Como Adicionar Novas Classes e Perfis
 
 Para incluir uma nova classe ou perfil (ex.: `ADD_CAPTION` no perfil `AUDITIVO`):
 
@@ -422,7 +467,7 @@ Para incluir uma nova classe ou perfil (ex.: `ADD_CAPTION` no perfil `AUDITIVO`)
 
 ---
 
-## 17. Como Contribuir
+## 18. Como Contribuir
 
 1. Faça um Fork do projeto.
 2. Crie uma branch para sua funcionalidade (`git checkout -b feature/nova-classe`).
@@ -438,7 +483,7 @@ Para incluir uma nova classe ou perfil (ex.: `ADD_CAPTION` no perfil `AUDITIVO`)
 
 ---
 
-## 18. Citação
+## 19. Citação
 
 Se este trabalho for útil para sua pesquisa, por favor cite:
 
@@ -453,7 +498,7 @@ Se este trabalho for útil para sua pesquisa, por favor cite:
 
 ---
 
-## 19. Licença e Contato
+## 20. Licença e Contato
 
 Distribuído sob a licença MIT. Veja [`LICENSE`](LICENSE) para mais informações.
 

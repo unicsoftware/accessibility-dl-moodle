@@ -19,6 +19,8 @@ MODE          := HYBRID
 HTML          ?= <img src="foto.png">
 PROFILE       ?= VISUAL
 MODEL         ?= mlp
+SCENARIO      ?= all
+REPETITIONS   ?= 5
 
 # Diretórios -------------------------------------------------------------
 DATASET_RAW   = dataset/raw
@@ -27,7 +29,7 @@ MODELS_DIR    = models
 RESULTS_DIR   = results
 
 # Comandos principais ----------------------------------------------------
-.PHONY: help install dataset train evaluate predict clean all tests lint format
+.PHONY: help install dataset train evaluate predict benchmark clean all tests lint format
 
 help:
 	@echo "================================================================="
@@ -41,6 +43,7 @@ help:
 	@echo "  make train       - Treina Regressão Logística, Gradient Boosting e MLP"
 	@echo "  make evaluate    - Gera métricas, matrizes e relatórios"
 	@echo "  make predict     - Executa inferência de exemplo"
+	@echo "  make benchmark   - Executa benchmark comparativo de latência e custo"
 	@echo "  make tests       - Executa a suíte de testes"
 	@echo "  make lint        - Verifica qualidade de código"
 	@echo "  make format      - Formata o código"
@@ -76,6 +79,9 @@ evaluate:
 
 predict:
 	$(PYTHON) src/inference/predict.py --html '$(HTML)' --profile $(PROFILE) --model $(MODEL)
+
+benchmark:
+	$(PYTHON) artefatos-pesquisa/benchmark_latencia.py --scenario $(SCENARIO) --repetitions $(REPETITIONS)
 
 tests:
 	$(PYTEST) -v tests/ --cov=src --cov-report=term-missing

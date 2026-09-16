@@ -153,6 +153,22 @@ PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.pn
 
 ---
 
+### Passo 6: Execução dos Benchmarks de Latência e Pesquisa
+
+Para avaliar o custo e tempo de resposta comparativo entre o motor simbólico local (IMS AccessForAll via `rdflib`) e APIs de LLM remotas:
+
+```bash
+# Via Make (Recomendado)
+make benchmark
+
+# Via linha de comando direta:
+PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py
+```
+
+> **Documentação Detalhada:** Veja [`artefatos-pesquisa/README.md`](../artefatos-pesquisa/README.md).
+
+---
+
 ## 4. Como Executar os Notebooks Jupyter
 
 Os notebooks na pasta `notebooks/` permitem explorar o dataset, treinar modelos interativamente e visualizar a classificação de predições.
