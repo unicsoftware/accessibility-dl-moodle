@@ -97,6 +97,7 @@ graph TB
 6. **Feature Engineering (`src/dataset/feature_engineering.py`):** Extrai 22 features estruturais numéricas do DOM/HTML.
 7. **Modelagem (`src/models/`):** Implementa e treina **Logistic Regression**, **Gradient Boosting** e **MLP (PyTorch)**.
 8. **Avaliação (`src/evaluation/`):** Calcula Precision, Recall, F1-score globais e por critério WCAG (`wcag_evaluation.csv`), comparando os modelos entre si e contra as violações detectadas pelo axe-core.
+9. **Esteira de Empacotamento SCORM e Runtime Wrapper (`src/wrapper/`):** Fornece o utilitário de empacotamento (`scorm_packager.py`) e o script cliente injetado (`intera-wrapper.js`) para viabilizar a autoadaptação em tempo de execução sem requerer plugins no servidor Moodle.
 
 ---
 
@@ -221,8 +222,12 @@ accessibility-dl-moodle/
 │   │   ├── metrics.py
 │   │   ├── confusion_matrix.py
 │   │   └── reports.py
-│   └── inference/
-│       └── predict.py
+│   ├── inference/
+│   │   └── predict.py
+│   └── wrapper/               ← Camada 9: SCORM Packager & Runtime Wrapper
+│       ├── __init__.py
+│       ├── scorm_packager.py  ← Utilitário CLI e biblioteca de empacotamento
+│       └── intera-wrapper.js  ← Script cliente leve injetado no SCORM
 │
 ├── models/                    ← Artefatos treinados
 │   ├── logistic_model.pkl
@@ -411,11 +416,86 @@ PYTHONPATH=. .venv/bin/python src/inference/predict.py --html '<img src="foto.pn
 
 ---
 
-## 16. Artefatos de Pesquisa e Benchmark de Latência / Custo
+## 16. Esteira de Produção: SCORM Packager e INTERA-AI Runtime Wrapper (`src/wrapper/`)
+
+Para levar a capacidade de recomendação de acessibilidade treinada no pipeline para o uso real em sala de aula sem depender de instalação de plugins no servidor central do Moodle, o repositório disponibiliza o módulo de esteira [`src/wrapper/`](src/wrapper/):
+
+```text
+src/wrapper/
+├── __init__.py           # Exporta inject_wrapper_into_scorm e SCORMPackager
+├── scorm_packager.py     # Utilitário CLI e biblioteca de empacotamento automatizado SCORM
+└── intera-wrapper.js     # Script cliente leve injetado no interior do Objeto de Aprendizagem
+```
+
+### 16.1. Como Funciona a Ferramenta de Empacotamento (`scorm_packager.py`)
+
+O **SCORM Packager** automatiza o processo de injeção em pacotes de cursos exportados por ferramentas de autoria (como Articulate Storyline, Adobe Captivate, iSpring ou geradores HTML5):
+
+1. **Descompactação Segura:** Extrai o arquivo `.zip` do curso em um diretório temporário isolado;
+2. **Cópia do Agente:** Copia o script `intera-wrapper.js` para a raiz do pacote;
+3. **Injeção Não-Destrutiva no HTML:** Localiza todos os arquivos `.html` da aula e insere a tag de carregamento assíncrono antes do fechamento de `</head>`:
+   ```html
+   <!-- [INTERA-AI Runtime Wrapper] Injetado automaticamente -->
+   <script src="intera-wrapper.js" defer></script>
+   ```
+4. **Atualização do Manifesto SCORM:** Insere a declaração `<file href="intera-wrapper.js"/>` dentro da tag `<resources>` no arquivo `imsmanifest.xml`. Isso assegura que validadores normativos do LMS (Moodle, Blackboard, Canvas) aprovem o pacote com 100% de conformidade;
+5. **Reempacotamento:** Gera o novo arquivo compactado (`aula_acessivel.zip`), pronto para upload direto na atividade padrão *"Pacote SCORM"* do Moodle.
+
+### 16.2. Como o `intera-wrapper.js` Opera no Navegador do Aluno
+
+Ao ser carregado pelo navegador no interior do `<iframe>` do SCORM:
+* **Extração Atômica de 22 Features:** Avalia os nós do DOM e monta o mesmo vetor numérico de 22 variáveis estruturais do pipeline (`src/config.py`);
+* **Cache Criptográfico Local (0 ms):** Calcula o hash SHA-256 do elemento e verifica se a descrição já está salva no `sessionStorage` do navegador, eliminando chamadas repetidas de rede em revisitas;
+* **Consulta Assíncrona e Degradação Graciosa:** Envia requisição `fetch` assíncrona ao Gateway de inferência (`POST /api/v1/adapt`) com *timeout* restrito de 400 ms. Se a rede oscilar, o DOM original é mantido intacto sem gerar erros para o aluno;
+* **Mutação Cirúrgica no DOM:** Aplica `alt`, `role="button"`, `tabindex="0"` e suporte a teclado (Enter/Espaço), permitindo que o leitor NVDA vocalize o conteúdo perfeitamente;
+* **Integridade Absoluta com o SCORM:** Não intercepta nem modifica o barramento `window.parent.API_1484_11`. O registro de notas e status de conclusão (`LMSSetValue` / `LMSCommit`) segue operando normalmente.
+
+### 16.3. Como Executar o SCORM Packager
+
+#### Opção A: Via Linha de Comando (CLI)
+
+```bash
+# Injeta o wrapper e gera o pacote adaptado
+PYTHONPATH=. .venv/bin/python src/wrapper/scorm_packager.py \
+    --input caminho/para/aula_original.zip \
+    --output caminho/para/aula_acessivel.zip
+```
+
+#### Opção B: Via Makefile
+
+```bash
+make package INPUT=caminho/para/aula_original.zip OUTPUT=caminho/para/aula_acessivel.zip
+```
+
+#### Opção C: Uso Programático em Python
+
+```python
+from src.wrapper import inject_wrapper_into_scorm
+
+# Executa o empacotamento completo
+pacote_final = inject_wrapper_into_scorm(
+    input_path="aula_original.zip",
+    output_path="aula_acessivel.zip"
+)
+print(f"Pacote acessível gerado em: {pacote_final}")
+```
+
+### 16.4. Parâmetros da CLI (`scorm_packager.py`)
+
+| Flag | Descrição | Obrigatório? | Padrão |
+| :--- | :--- | :---: | :--- |
+| `-i`, `--input` | Caminho do arquivo `.zip` ou pasta do curso SCORM original | **Sim** | - |
+| `-o`, `--output` | Caminho do arquivo `.zip` final adaptado a ser gerado | **Sim** | - |
+| `-w`, `--wrapper` | Caminho opcional para versão customizada do `intera-wrapper.js` | Não | `src/wrapper/intera-wrapper.js` |
+| `-q`, `--quiet` | Suprime logs detalhados do terminal | Não | `False` |
+
+---
+
+## 17. Artefatos de Pesquisa e Benchmark de Latência / Custo
 
 Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pesquisa/`](artefatos-pesquisa/) contém experimentos que comparam empiricamente a abordagem **Simbólica / Ontológica Local** (*IMS AccessForAll / EARL via RDF*) contra **Modelos de Linguagem Remotos (LLMs)** em 3 cenários reais de adaptação de acessibilidade no Moodle:
 
-### 16.1. Cenários Avaliados
+### 17.1. Cenários Avaliados
 
 1. **Cenário 1 — Decisão Booleana de Perfil:** Verifica se um estudante com deficiência visual necessita de alto contraste (`requiresHighContrast`).
    - *Ontologia (SPARQL):* `SELECT ?val WHERE { ex:AlunoVisual afa:requiresHighContrast ?val . }` $\rightarrow$ `['true']` (**~59.8 ms**, custo zero).
@@ -427,7 +507,7 @@ Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pes
    - *Ontologia (SPARQL):* Consulta multi-propriedades $\rightarrow$ `[alto contraste, teclado, fontes ampliadas]` (**~11.1 ms**, custo zero).
    - *LLM Remota:* Prompt de extração multi-critério em JSON (**~1.204 ms**, $0.000091 USD).
 
-### 16.2. Tabela Resumo Consolidada
+### 17.2. Tabela Resumo Consolidada
 
 | Cenário Avaliado | Ontologia Local (RDF/SPARQL) | LLM Remota (Nuvem) | Aceleração | Custo LLM |
 | :--- | :---: | :---: | :---: | :---: |
@@ -435,7 +515,7 @@ Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pes
 | **Cenário 2:** Classificação WCAG (`ADD_ALT`) | **14.44 ms** | 1.202.92 ms | **83x mais rápido** | $0.000085 USD |
 | **Cenário 3:** Perfil Múltiplo (Baixa Visão + Motor) | **11.16 ms** | 1.204.28 ms | **108x mais rápido** | $0.000091 USD |
 
-### 16.3. Como Executar o Benchmark
+### 17.3. Como Executar o Benchmark
 
 ```bash
 # Executa todos os 3 cenários (Recomendado)
@@ -452,7 +532,7 @@ PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --interac
 
 ---
 
-## 17. Como Adicionar Novas Classes e Perfis
+## 18. Como Adicionar Novas Classes e Perfis
 
 Para incluir uma nova classe ou perfil (ex.: `ADD_CAPTION` no perfil `AUDITIVO`):
 
@@ -467,7 +547,7 @@ Para incluir uma nova classe ou perfil (ex.: `ADD_CAPTION` no perfil `AUDITIVO`)
 
 ---
 
-## 18. Como Contribuir
+## 19. Como Contribuir
 
 1. Faça um Fork do projeto.
 2. Crie uma branch para sua funcionalidade (`git checkout -b feature/nova-classe`).
@@ -483,7 +563,7 @@ Para incluir uma nova classe ou perfil (ex.: `ADD_CAPTION` no perfil `AUDITIVO`)
 
 ---
 
-## 19. Citação
+## 20. Citação
 
 Se este trabalho for útil para sua pesquisa, por favor cite:
 
@@ -498,7 +578,7 @@ Se este trabalho for útil para sua pesquisa, por favor cite:
 
 ---
 
-## 20. Licença e Contato
+## 21. Licença e Contato
 
 Distribuído sob a licença MIT. Veja [`LICENSE`](LICENSE) para mais informações.
 

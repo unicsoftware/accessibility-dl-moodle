@@ -29,7 +29,7 @@ MODELS_DIR    = models
 RESULTS_DIR   = results
 
 # Comandos principais ----------------------------------------------------
-.PHONY: help install dataset train evaluate predict benchmark clean all tests lint format
+.PHONY: help install dataset train evaluate predict benchmark package clean all tests lint format
 
 help:
 	@echo "================================================================="
@@ -44,6 +44,7 @@ help:
 	@echo "  make evaluate    - Gera métricas, matrizes e relatórios"
 	@echo "  make predict     - Executa inferência de exemplo"
 	@echo "  make benchmark   - Executa benchmark comparativo de latência e custo"
+	@echo "  make package     - Injeta o INTERA-AI Wrapper em um pacote SCORM (INPUT=... OUTPUT=...)"
 	@echo "  make tests       - Executa a suíte de testes"
 	@echo "  make lint        - Verifica qualidade de código"
 	@echo "  make format      - Formata o código"
@@ -82,6 +83,12 @@ predict:
 
 benchmark:
 	$(PYTHON) artefatos-pesquisa/benchmark_latencia.py --scenario $(SCENARIO) --repetitions $(REPETITIONS)
+
+INPUT         ?= aula_original.zip
+OUTPUT        ?= aula_acessivel.zip
+
+package:
+	$(PYTHON) src/wrapper/scorm_packager.py --input '$(INPUT)' --output '$(OUTPUT)'
 
 tests:
 	$(PYTEST) -v tests/ --cov=src --cov-report=term-missing
