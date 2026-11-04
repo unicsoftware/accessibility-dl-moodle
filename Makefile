@@ -29,7 +29,7 @@ MODELS_DIR    = models
 RESULTS_DIR   = results
 
 # Comandos principais ----------------------------------------------------
-.PHONY: help install dataset train evaluate predict benchmark package clean all tests lint format
+.PHONY: help install dataset train evaluate predict api demo benchmark package clean all tests lint format
 
 help:
 	@echo "================================================================="
@@ -43,7 +43,9 @@ help:
 	@echo "  make train       - Treina Regressão Logística, Gradient Boosting e MLP"
 	@echo "  make evaluate    - Gera métricas, matrizes e relatórios"
 	@echo "  make predict     - Executa inferência de exemplo"
-	@echo "  make benchmark   - Executa benchmark comparativo de latência e custo"
+	@echo "  make api         - Inicia o servidor REST da API INTERA-AI (porta 8000)"
+	@echo "  make demo        - Executa demonstração ponta a ponta (SCORM Packager + Wrapper + API)"
+	@echo "  make benchmark   - Executa benchmark comparativo de latência, custo e pipelines"
 	@echo "  make package     - Injeta o INTERA-AI Wrapper em um pacote SCORM (INPUT=... OUTPUT=...)"
 	@echo "  make tests       - Executa a suíte de testes"
 	@echo "  make lint        - Verifica qualidade de código"
@@ -80,6 +82,14 @@ evaluate:
 
 predict:
 	$(PYTHON) src/inference/predict.py --html '$(HTML)' --profile $(PROFILE) --model $(MODEL)
+
+PORT          ?= 8000
+
+api:
+	$(PYTHON) src/inference/api.py --port $(PORT)
+
+demo:
+	$(PYTHON) artefatos-pesquisa/demo_scorm_e2e.py
 
 benchmark:
 	$(PYTHON) artefatos-pesquisa/benchmark_latencia.py --scenario $(SCENARIO) --repetitions $(REPETITIONS)

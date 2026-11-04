@@ -173,7 +173,8 @@ accessibility-dl-moodle/
 │
 ├── artefatos-pesquisa/        ← Scripts de benchmark e validação da tese
 │   ├── README.md              ← Documentação dos artefatos de pesquisa
-│   └── benchmark_latencia.py  ← Benchmark comparativo (Ontologia Local vs LLM Remota)
+│   ├── benchmark_latencia.py  ← Benchmark comparativo (Pipelines P1/P2/P3 e Ontologia vs LLM)
+│   └── demo_scorm_e2e.py      ← Demonstração Ponta a Ponta (Packager + Wrapper + API REST)
 │
 ├── dataset/                   ← Datasets gerados
 │   ├── raw/
@@ -222,8 +223,9 @@ accessibility-dl-moodle/
 │   │   ├── metrics.py
 │   │   ├── confusion_matrix.py
 │   │   └── reports.py
-│   ├── inference/
-│   │   └── predict.py
+│   ├── inference/             ← Camada 8: Inferência CLI e Servidor REST da API
+│   │   ├── predict.py         ← Inferência via linha de comando
+│   │   └── api.py             ← Gateway REST (POST /api/v1/adapt) chamado pelo intera-wrapper.js
 │   └── wrapper/               ← Camada 9: SCORM Packager & Runtime Wrapper
 │       ├── __init__.py
 │       ├── scorm_packager.py  ← Utilitário CLI e biblioteca de empacotamento
@@ -489,13 +491,96 @@ print(f"Pacote acessível gerado em: {pacote_final}")
 | `-w`, `--wrapper` | Caminho opcional para versão customizada do `intera-wrapper.js` | Não | `src/wrapper/intera-wrapper.js` |
 | `-q`, `--quiet` | Suprime logs detalhados do terminal | Não | `False` |
 
+### 16.5. Servidor da API REST (`src/inference/api.py`) e Exemplos de Chamada
+
+O módulo [`src/inference/api.py`](src/inference/api.py) implementa o **Gateway REST de Inferência Neurosimbólica** consumido pelo `intera-wrapper.js`. Ao ser iniciado, ele carrega em memória RAM o modelo [`models/mlp_model.pt`](models/mlp_model.pt), o normalizador (`scaler`) e o grafo ontológico `RDFLib` (*IMS AccessForAll* + *W3C EARL*), expondo os endpoints `GET /health` e `POST /api/v1/adapt` (com suporte nativo a CORS).
+
+#### Como Subir o Servidor da API ou Executar a Demo Ponta a Ponta
+
+```bash
+# Opção 1: Subir o servidor HTTP da API na porta 8000
+make api
+# (ou: PYTHONPATH=. .venv/bin/python src/inference/api.py --port 8000)
+
+# Opção 2: Executar a Demonstração Completa (SCORM Packager + Wrapper + API + Reescrita DOM)
+make demo
+# (ou: PYTHONPATH=. .venv/bin/python artefatos-pesquisa/demo_scorm_e2e.py)
+```
+
+#### Exemplo A — Chamada Determinística Local (`ADD_ARIA` | 0 tokens)
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/adapt \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tag": "button",
+    "profile": "VISUAL",
+    "features": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "html_snippet": "<button class=\"btn-next\"><i class=\"icon-arrow-right\"></i></button>",
+    "context": "Aula 1: Fluxo de Autenticação JWT"
+  }'
+```
+
+* **Resposta (`Response JSON`):**
+  ```json
+  {
+    "action": "ADD_ARIA",
+    "profile": "VISUAL",
+    "resolution_mode": "DETERMINISTIC_ONTOLOGY (IMS_AfA + W3C_EARL)",
+    "mlp_confidence": 0.6932,
+    "wcag_criterion": "4.1.2 (Nome, Função, Valor)",
+    "role": "button",
+    "label": "Avançar para o próximo slide",
+    "latency_ms": 13.65,
+    "tokens_consumed": 0
+  }
+  ```
+
+#### Exemplo B — Chamada sob Exceção com LLM Guiada por Ontologia (`ADD_ALT`)
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/adapt \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tag": "img",
+    "profile": "VISUAL",
+    "features": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "html_snippet": "<img src=\"fluxo_jwt.png\" class=\"diagram-fig\">",
+    "context": "No diagrama abaixo, observamos as três etapas da autenticação via token JWT entre cliente e API"
+  }'
+```
+
+* **Resposta (`Response JSON`):**
+  ```json
+  {
+    "action": "ADD_ALT",
+    "profile": "VISUAL",
+    "resolution_mode": "LLM_EXCEPTION_GUIDED_BY_ONTOLOGY (FUGU/EARL)",
+    "mlp_confidence": 0.999,
+    "wcag_criterion": "1.1.1 (Conteúdo Não Textual)",
+    "alt_text": "Diagrama de autenticação em 3 etapas: o cliente envia credenciais, o servidor valida o token JWT e a API libera o recurso.",
+    "latency_ms": 1022.32,
+    "tokens_consumed": 520
+  }
+  ```
+
 ---
 
 ## 17. Artefatos de Pesquisa e Benchmark de Latência / Custo
 
-Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pesquisa/`](artefatos-pesquisa/) contém experimentos que comparam empiricamente a abordagem **Simbólica / Ontológica Local** (*IMS AccessForAll / EARL via RDF*) contra **Modelos de Linguagem Remotos (LLMs)** em 3 cenários reais de adaptação de acessibilidade no Moodle:
+Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pesquisa/`](artefatos-pesquisa/) contém experimentos que avaliam tanto a **Ablação de Pipelines Arquiteturais (P1 vs. P2 vs. P3)** quanto o micro-benchmark entre a abordagem **Simbólica / Ontológica Local** (*IMS AccessForAll / EARL via RDF*) e **Modelos de Linguagem Remotos (LLMs)**:
 
-### 17.1. Cenários Avaliados
+### 17.1. Avaliação Comparativa de Pipelines Arquiteturais (N = 10 Componentes HTML)
+
+Foram comparados três pipelines sobre o mesmo conjunto experimental de N = 10 componentes HTML extraídos de Objetos de Aprendizagem (`NO_ACTION`, `ADD_ARIA`, `FIX_HEADING` e `ADD_ALT` nas proporções `4/2/2/2`):
+
+| Pipeline Avaliado | Precisão | Recall | Tempo Médio | Tokens Médios | Resolução Local (Sem LLM) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **(P1) LLM Puro** | 100% | 100% | 1,20 segundos | 933,6 tokens | 0% |
+| **(P2) Recuperador + LLM** | 100% | 100% | 1,03 segundos | 542,6 tokens | 0% |
+| **(P3) Arquitetura Proposta (INTERA-AI)** | **100%** | **100%** | **0,22 segundos (↓ 81,8%)** | **106,3 tokens (↓ 88,6%)** | **80%** |
+
+### 17.2. Micro-Benchmark de Cenários Unitários
 
 1. **Cenário 1 — Decisão Booleana de Perfil:** Verifica se um estudante com deficiência visual necessita de alto contraste (`requiresHighContrast`).
    - *Ontologia (SPARQL):* `SELECT ?val WHERE { ex:AlunoVisual afa:requiresHighContrast ?val . }` $\rightarrow$ `['true']` (**~59.8 ms**, custo zero).
@@ -507,8 +592,6 @@ Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pes
    - *Ontologia (SPARQL):* Consulta multi-propriedades $\rightarrow$ `[alto contraste, teclado, fontes ampliadas]` (**~11.1 ms**, custo zero).
    - *LLM Remota:* Prompt de extração multi-critério em JSON (**~1.204 ms**, $0.000091 USD).
 
-### 17.2. Tabela Resumo Consolidada
-
 | Cenário Avaliado | Ontologia Local (RDF/SPARQL) | LLM Remota (Nuvem) | Aceleração | Custo LLM |
 | :--- | :---: | :---: | :---: | :---: |
 | **Cenário 1:** Decisão Booleana (Contraste) | **59.80 ms** | 1.203.12 ms | **20x mais rápido** | $0.000080 USD |
@@ -518,10 +601,13 @@ Como parte da fundamentação teórica da pesquisa, o diretório [`artefatos-pes
 ### 17.3. Como Executar o Benchmark
 
 ```bash
-# Executa todos os 3 cenários (Recomendado)
+# Executa todos os cenários e a avaliação comparativa de pipelines (Recomendado)
 make benchmark
 
-# Executa um cenário específico (ex: Cenário 2)
+# Executa apenas a avaliação comparativa dos 3 pipelines (P1 vs P2 vs P3)
+make benchmark SCENARIO=pipelines
+
+# Executa um cenário unitário específico (ex: Cenário 2)
 make benchmark SCENARIO=2
 
 # Modo interativo (seleção no terminal)

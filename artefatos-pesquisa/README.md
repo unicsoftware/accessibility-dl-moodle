@@ -151,19 +151,36 @@ PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --scenari
 PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --interactive
 ```
 
+### 4.5. Demonstração Ponta a Ponta (SCORM Packager + Wrapper JS + API REST)
+
+O script `artefatos-pesquisa/demo_scorm_e2e.py` demonstra todo o ciclo de vida operacional do objeto de entrega:
+1. Criação e descompactação de um pacote SCORM (`aula_original.zip`);
+2. Injeção automática do `intera-wrapper.js` nos arquivos HTML e atualização do `imsmanifest.xml` (`scorm_packager.py`);
+3. Montagem da requisição JSON (`POST /api/v1/adapt`) com o vetor de 22 features estruturais extraído pelo wrapper;
+4. Processamento pelo Gateway (`src/inference/api.py`) tanto no modo **Determinístico Local** (`ADD_ARIA`, 0 tokens) quanto no modo **Exceção Semântica com LLM** (`ADD_ALT`);
+5. Reescrita cirúrgica no DOM preservando a API SCORM (`window.parent.API_1484_11`).
+
+```bash
+# Via Makefile
+make demo
+
+# Ou via CLI direta
+PYTHONPATH=. .venv/bin/python artefatos-pesquisa/demo_scorm_e2e.py
+```
+
 ---
 
 ## 5. Tabelas Resumo Consolidadas dos Resultados
 
-### 5.1. Avaliação Comparativa de Pipelines Arquiteturais ($N = 10$ Componentes HTML)
+### 5.1. Avaliação Comparativa de Pipelines Arquiteturais (N = 10 Componentes HTML)
 
-Foram comparadas três arquiteturas sobre o mesmo conjunto experimental de $N = 10$ componentes HTML extraídos de Objetos de Aprendizagem (distribuídos em `NO_ACTION`, `ADD_ARIA`, `FIX_HEADING` e `ADD_ALT` nas proporções `4/2/2/2`):
+Foram comparadas três arquiteturas sobre o mesmo conjunto experimental de N = 10 componentes HTML extraídos de Objetos de Aprendizagem (distribuídos em `NO_ACTION`, `ADD_ARIA`, `FIX_HEADING` e `ADD_ALT` nas proporções `4/2/2/2`):
 
 | Pipeline Avaliado | Precisão | Recall | Tempo Médio | Tokens Médios | Resolução Local (Sem LLM) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **(P1) LLM Puro** | 100% | 100% | 1,20 s | 933,6 | 0% |
-| **(P2) Recuperador + LLM** | 100% | 100% | 1,03 s | 542,6 | 0% |
-| **(P3) Arquitetura Proposta (INTERA-AI)** | **100%** | **100%** | **0,22 s** ($\downarrow 81,8\%$) | **106,3** ($\downarrow 88,6\%$) | **80%** |
+| **(P1) LLM Puro** | 100% | 100% | 1,20 segundos | 933,6 tokens | 0% |
+| **(P2) Recuperador + LLM** | 100% | 100% | 1,03 segundos | 542,6 tokens | 0% |
+| **(P3) Arquitetura Proposta (INTERA-AI)** | **100%** | **100%** | **0,22 segundos (↓ 81,8%)** | **106,3 tokens (↓ 88,6%)** | **80%** |
 
 * **80% dos componentes (8/10)** foram resolvidos deterministicamente sem qualquer chamada ao modelo de linguagem;
 * A **latência média** foi reduzida em aproximadamente **81,8%**;
