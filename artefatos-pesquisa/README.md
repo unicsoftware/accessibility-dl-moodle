@@ -128,7 +128,14 @@ make benchmark
 PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --scenario all
 ```
 
-### 4.2. Execução de um Cenário Específico
+### 4.2. Execução da Avaliação Comparativa de Pipelines (Ablação P1, P2 e P3)
+
+```bash
+# Executa a comparação entre LLM Puro (P1), Recuperador + LLM (P2) e INTERA-AI Proposto (P3)
+PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --scenario pipelines
+```
+
+### 4.3. Execução de um Cenário Unitário Específico
 
 ```bash
 # Executa apenas o Cenário 2 (Classificação WCAG)
@@ -138,7 +145,7 @@ make benchmark SCENARIO=2
 PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --scenario 2
 ```
 
-### 4.3. Modo Interativo (Seleção no Terminal)
+### 4.4. Modo Interativo (Seleção no Terminal)
 
 ```bash
 PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --interactive
@@ -146,9 +153,26 @@ PYTHONPATH=. .venv/bin/python artefatos-pesquisa/benchmark_latencia.py --interac
 
 ---
 
-## 5. Tabela Resumo Consolidada dos Resultados
+## 5. Tabelas Resumo Consolidadas dos Resultados
 
-Resultados obtidos em ambiente de teste com 5 repetições por cenário:
+### 5.1. Avaliação Comparativa de Pipelines Arquiteturais ($N = 10$ Componentes HTML)
+
+Foram comparadas três arquiteturas sobre o mesmo conjunto experimental de $N = 10$ componentes HTML extraídos de Objetos de Aprendizagem (distribuídos em `NO_ACTION`, `ADD_ARIA`, `FIX_HEADING` e `ADD_ALT` nas proporções `4/2/2/2`):
+
+| Pipeline Avaliado | Precisão | Recall | Tempo Médio | Tokens Médios | Resolução Local (Sem LLM) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **(P1) LLM Puro** | 100% | 100% | 1,20 s | 933,6 | 0% |
+| **(P2) Recuperador + LLM** | 100% | 100% | 1,03 s | 542,6 | 0% |
+| **(P3) Arquitetura Proposta (INTERA-AI)** | **100%** | **100%** | **0,22 s** ($\downarrow 81,8\%$) | **106,3** ($\downarrow 88,6\%$) | **80%** |
+
+* **80% dos componentes (8/10)** foram resolvidos deterministicamente sem qualquer chamada ao modelo de linguagem;
+* A **latência média** foi reduzida em aproximadamente **81,8%**;
+* O **consumo médio de tokens** diminuiu cerca de **88,6%**;
+* A **precisão e o recall** permaneceram inalterados em **100%** no conjunto experimental.
+
+### 5.2. Micro-Benchmark de Consultas Unitárias (50 Iterações por Cenário)
+
+Resultados obtidos em ambiente de teste para operações isoladas:
 
 | Cenário Avaliado | Ontologia Local (SPARQL/RDF) | LLM Remota (API Nuvem) | Aceleração | Custo Financeiro LLM |
 | :--- | :---: | :---: | :---: | :---: |
